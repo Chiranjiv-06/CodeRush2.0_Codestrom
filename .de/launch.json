@@ -1,0 +1,22 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "m2x-api",
+      "runtimeExecutable": "C:/Users/Aakanksha/OneDrive/Desktop/MK-l/.venv2/Scripts/python.exe",
+      "runtimeArgs": [
+        "-m",
+        "uvicorn",
+        "app.main:app",
+        "--app-dir",
+        "C:/Users/Aakanksha/OneDrive/Desktop/MK-l/backend",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8017"
+      ],
+      "port": 8017,
+      "url": "http://localhost:8017"
+    }
+  ]
+}

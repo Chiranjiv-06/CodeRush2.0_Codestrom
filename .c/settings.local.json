@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(\"python: \" + \\(try { \\(python --version\\) } catch { \"none\" }\\); \"node: \" + \\(try { \\(node --version\\) } catch { \"none\" }\\); \"npm: \" + \\(try { \\(npm --version\\) } catch { \"none\" }\\); \"docker: \" + \\(try { \\(docker --version\\) } catch { \"none\" }\\))",
+      "PowerShell(foreach \\($c in @\\('python','py','node','npm','docker','git'\\)\\) { $p = Get-Command $c -ErrorAction SilentlyContinue; if \\($p\\) { \"$c -> $\\($p.Source\\)\" } else { \"$c -> MISSING\" } })",
+      "PowerShell(py --version)",
+      "PowerShell(py -m pip --version)",
+      "PowerShell(py -m pip install --quiet --disable-pip-version-check \"fastapi>=0.110\" \"uvicorn[standard]\" \"sqlalchemy>=2.0\" \"pydantic-settings\" \"pyjwt\" \"httpx\" \"prometheus-client\" \"pytest\" \"python-multipart\" 2>&1 | Select-Object -Last 15; \"EXIT=$LASTEXITCODE\")",
+      "PowerShell(py -m pip install --quiet --disable-pip-version-check email-validator 2>&1 | Select-Object -Last 3; $env:PYTHONPATH=\"C:\\\\Users\\\\Aakanksha\\\\OneDrive\\\\Desktop\\\\MK-l\\\\backend\"; py -c \"from app.main import app; print\\('IMPORT OK'\\); print\\(len\\(app.routes\\), 'routes'\\)\")",
+      "PowerShell($env:PYTHONPATH=\"C:\\\\Users\\\\Aakanksha\\\\OneDrive\\\\Desktop\\\\MK-l\\\\backend\"; py -c \"from app.main import app;[print\\(getattr\\(r,'path','?'\\)\\) for r in app.routes]\")",
+      "PowerShell($env:PYTHONPATH=\"C:\\\\Users\\\\Aakanksha\\\\OneDrive\\\\Desktop\\\\MK-l\\\\backend\"; py -c \"from app.main import app;[print\\(type\\(r\\).__name__, getattr\\(r,'path','-'\\), getattr\\(r,'routes',None\\) and len\\(r.routes\\)\\) for r in app.routes]\")"
+    ]
+  }
+}

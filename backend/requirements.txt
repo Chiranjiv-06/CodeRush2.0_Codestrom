@@ -1,0 +1,48 @@
+# --- core API -------------------------------------------------------------
+fastapi>=0.110
+uvicorn[standard]>=0.27
+pydantic>=2.6
+pydantic-settings>=2.2
+python-multipart>=0.0.9
+httpx>=0.27
+
+# --- persistence ----------------------------------------------------------
+SQLAlchemy>=2.0
+psycopg[binary]>=3.1 ; platform_python_implementation == "CPython"
+redis>=5.0
+minio>=7.2
+
+# --- security -------------------------------------------------------------
+PyJWT>=2.8
+
+# --- observability --------------------------------------------------------
+prometheus-client>=0.20
+
+# --- agent ----------------------------------------------------------------
+# Optional: the agent graph falls back to an embedded engine when absent.
+langgraph>=0.2 ; python_version >= "3.10"
+
+# --- algorand / algokit ---------------------------------------------------
+# algokit-utils is the recommended high-level Algorand SDK (AlgoKit 2+).
+# algosdk is the underlying low-level SDK used by algokit-utils.
+# Both are optional: the exchange falls back to stub data when absent.
+algokit-utils>=2.0 ; python_version >= "3.10"
+py-algorand-sdk>=2.5
+
+# --- zerion (onchain intelligence provider) -------------------------------
+# No Python dependency: the HTTP transport uses httpx (already required above)
+# and the CLI transport uses the standard library's subprocess.
+#
+# The x402 pay-per-request rail needs the official Zerion CLI, a Node.js tool:
+#     npm install -g zerion-cli        # requires Node.js 20+
+# It is optional — without it the exchange uses the Zerion HTTP API with an API
+# key, or clearly-labelled demo fixtures. See ZERION.md.
+
+# --- vibekit (AI agent sandbox) ------------------------------------------
+# Optional: when installed, VibeKit routes use the cloud sandbox.
+# Without it the built-in subprocess sandbox is used automatically.
+# vibekit>=0.1   # uncomment when available on PyPI
+
+# --- tests ----------------------------------------------------------------
+pytest>=8.0
+pytest-asyncio>=0.23

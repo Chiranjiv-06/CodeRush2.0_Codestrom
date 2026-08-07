@@ -1,0 +1,2159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M2X Compute &amp; Tool Exchange - Standalone UI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #090d16;
+    --bg-mesh: radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
+              radial-gradient(circle at 85% 30%, rgba(20, 184, 166, 0.12) 0%, transparent 45%),
+              radial-gradient(circle at 50% 85%, rgba(139, 92, 246, 0.12) 0%, transparent 50%);
+    --surface: rgba(19, 27, 44, 0.75);
+    --surface-solid: #111827;
+    --surface-2: rgba(30, 41, 59, 0.65);
+    --surface-hover: rgba(30, 41, 59, 0.9);
+    --border: rgba(255, 255, 255, 0.09);
+    --border-glow: rgba(59, 130, 246, 0.3);
+    --text: #f8fafc;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-glow: rgba(56, 189, 248, 0.35);
+    --accent-soft: rgba(56, 189, 248, 0.12);
+    --ok: #34d399;
+    --ok-soft: rgba(52, 211, 153, 0.12);
+    --warn: #fbbf24;
+    --warn-soft: rgba(251, 191, 36, 0.12);
+    --bad: #f87171;
+    --bad-soft: rgba(248, 113, 113, 0.12);
+    --asa: #a78bfa;
+    --asa-soft: rgba(167, 139, 250, 0.12);
+    --vibe: #ec4899;
+    --vibe-soft: rgba(236, 72, 153, 0.12);
+    --mono: "Fira Code", monospace;
+    --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.36);
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow-x: hidden; min-height: 100vh; }
+  body {
+    background-color: var(--bg);
+    background-image: var(--bg-mesh);
+    background-attachment: fixed;
+    color: var(--text);
+    font: 14px/1.55 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex; flex-direction: column;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--mono); font-size: 12px; }
+
+  /* Chrome & Sticky Navigation */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(9, 13, 22, 0.85);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+  }
+  .brand {
+    font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #38bdf8, #34d399, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    display: flex; align-items: center; gap: 8px; margin-right: auto;
+  }
+  .brand small {
+    display: block; color: var(--muted); font-weight: 400; font-size: 11px;
+    -webkit-text-fill-color: var(--muted); letter-spacing: normal;
+  }
+
+  .header-badges { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .asset-badge {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--asa-soft); border: 1px solid rgba(167, 139, 250, 0.3);
+    border-radius: 9999px; padding: 6px 14px; transition: all 0.2s ease;
+  }
+  .asset-badge:hover { border-color: var(--asa); box-shadow: 0 0 12px var(--asa-soft); }
+  .asset-badge .label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); display: block; }
+  .asset-badge .value { font-weight: 600; color: var(--asa); font-size: 12px; }
+  .asset-badge .net { font-size: 11px; color: var(--muted); white-space: nowrap; }
+
+  .status-pill {
+    display: flex; align-items: center; gap: 6px; font-size: 11px;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border);
+    padding: 5px 12px; border-radius: 9999px; color: var(--muted);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .dot.green { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.blue { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot.purple { background: var(--asa); box-shadow: 0 0 8px var(--asa); }
+
+  nav {
+    position: sticky; top: 61px; z-index: 90;
+    display: flex; gap: 4px; padding: 6px 20px;
+    background: rgba(13, 17, 26, 0.85);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto; scrollbar-width: thin;
+  }
+  nav button {
+    background: transparent; border: 1px solid transparent;
+    color: var(--muted); padding: 7px 14px; border-radius: 8px;
+    font: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    white-space: nowrap; transition: all 0.2s ease;
+  }
+  nav button:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+  nav button.on {
+    color: var(--accent); background: var(--accent-soft);
+    border-color: rgba(56, 189, 248, 0.3); font-weight: 600;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+  }
+
+  main { padding: 24px; max-width: 1360px; margin: 0 auto; width: 100%; flex: 1; }
+  h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; letter-spacing: -0.01em; }
+  h3 { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: #e2e8f0; }
+  .hint { color: var(--muted); font-size: 12.5px; margin-bottom: 16px; line-height: 1.5; }
+  .hint.tight { margin: 0; }
+
+  /* Cards & Layouts */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow); transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card:hover { border-color: rgba(255, 255, 255, 0.15); }
+  .card + .card { margin-top: 14px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+  .tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .spread { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .toolbar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 16px; }
+
+  /* Buttons & Controls */
+  button.act {
+    background: linear-gradient(135deg, #0284c7, #2563eb); color: #fff;
+    border: none; border-radius: 8px; padding: 8px 16px;
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); transition: all 0.2s ease;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  button.act:hover:not(:disabled) {
+    transform: translateY(-1px); filter: brightness(1.1);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+  }
+  button.ghost {
+    background: var(--surface-2); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 14px; font: inherit; font-size: 12.5px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s ease;
+  }
+  button.ghost:hover:not(:disabled) {
+    border-color: var(--accent); color: var(--accent); background: var(--surface-hover);
+  }
+  button.algo {
+    background: linear-gradient(135deg, #0d9488, #059669); color: #fff;
+    border: none; border-radius: 8px; padding: 8px 16px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35); transition: all 0.2s ease;
+  }
+  button.algo:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 6px 20px rgba(13, 148, 136, 0.5); }
+  button.vibe {
+    background: linear-gradient(135deg, #9333ea, #c026d3); color: #fff;
+    border: none; border-radius: 8px; padding: 8px 16px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35); transition: all 0.2s ease;
+  }
+  button.vibe:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 6px 20px rgba(147, 51, 234, 0.5); }
+
+  button.danger {
+    background: var(--bad-soft); color: var(--bad); border: 1px solid rgba(248, 113, 113, 0.3);
+    border-radius: 8px; padding: 7px 14px; font: inherit; font-size: 12.5px; font-weight: 500; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  button.danger:hover:not(:disabled) { background: rgba(248, 113, 113, 0.2); border-color: var(--bad); }
+  button.link { background: none; border: 0; color: var(--accent); cursor: pointer; font: inherit; font-size: 12.5px; padding: 0; }
+  button.link:hover { text-decoration: underline; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  /* Form controls */
+  .field { display: flex; flex-direction: column; gap: 4px; min-width: 150px; }
+  label { font-size: 11.5px; font-weight: 500; color: var(--muted); }
+  input, textarea, select {
+    background: rgba(11, 15, 25, 0.6); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; font: inherit; font-size: 13px; width: 100%;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+  }
+  textarea { font-family: var(--mono); font-size: 12.5px; min-height: 90px; resize: vertical; }
+  input[type=checkbox] { width: auto; cursor: pointer; }
+  .check { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); cursor: pointer; }
+
+  /* Badges & Pills */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 9999px;
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); white-space: nowrap;
+  }
+  .pill.ok { color: var(--ok); background: var(--ok-soft); border-color: rgba(52, 211, 153, 0.3); }
+  .pill.warn { color: var(--warn); background: var(--warn-soft); border-color: rgba(251, 191, 36, 0.3); }
+  .pill.bad { color: var(--bad); background: var(--bad-soft); border-color: rgba(248, 113, 113, 0.3); }
+  .pill.asa { color: var(--asa); background: var(--asa-soft); border-color: rgba(167, 139, 250, 0.3); }
+  .pill.vibe { color: var(--vibe); background: var(--vibe-soft); border-color: rgba(236, 72, 153, 0.3); }
+  .pill.info { color: var(--accent); background: var(--accent-soft); border-color: rgba(56, 189, 248, 0.3); }
+
+  .asset-strip {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    background: var(--asa-soft); border: 1px solid rgba(167, 139, 250, 0.25);
+    border-radius: 10px; padding: 10px 14px; margin: 12px 0;
+  }
+  .asset-strip .k { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  .asset-strip .v { font-weight: 650; color: var(--asa); font-size: 13px; }
+
+  /* Data Tables */
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+  tr:last-child td { border-bottom: 0; }
+  tr:hover td { background: rgba(255, 255, 255, 0.02); }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  .scroll { overflow-x: auto; scrollbar-width: thin; }
+
+  /* Key-Value Lists */
+  dl.kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; font-size: 12.5px; margin: 0; }
+  dl.kv dt { color: var(--muted); font-weight: 500; }
+  dl.kv dd { margin: 0; font-family: var(--mono); word-break: break-all; }
+
+  /* Stats Tiles */
+  .stat {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow);
+    transition: transform 0.2s ease;
+  }
+  .stat:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, 0.15); }
+  .stat .n { font-size: 22px; font-weight: 700; font-family: var(--mono); line-height: 1.2; background: linear-gradient(135deg, #f8fafc, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .stat .l { color: var(--muted); font-size: 11.5px; margin-top: 4px; font-weight: 500; }
+
+  /* Terminal Console */
+  .terminal-console {
+    background: #020617; border: 1px solid #1e293b;
+    border-radius: 10px; padding: 14px; font-family: var(--mono);
+    font-size: 12px; color: #a7f3d0; height: 260px; overflow-y: auto;
+    white-space: pre-wrap; line-height: 1.6; box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5);
+  }
+
+  .empty { color: var(--muted); font-size: 13px; padding: 28px; text-align: center; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.15); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: -2px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Step Timelines */
+  .steps { display: flex; flex-direction: column; gap: 0; margin: 8px 0 0; }
+  .step { display: flex; gap: 12px; align-items: flex-start; padding: 8px 0; }
+  .step .dot {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border); flex: 0 0 auto;
+    margin-top: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff;
+    transition: all 0.3s ease;
+  }
+  .step.done .dot { background: var(--ok); border-color: var(--ok); box-shadow: 0 0 10px var(--ok-soft); }
+  .step.active .dot { border-color: var(--accent); border-top-color: transparent; animation: spin 0.7s linear infinite; }
+  .step.fail .dot { background: var(--bad); border-color: var(--bad); box-shadow: 0 0 10px var(--bad-soft); }
+  .step .t { font-size: 13px; font-weight: 500; }
+  .step .d { font-size: 11.5px; color: var(--muted); font-family: var(--mono); word-break: break-all; margin-top: 2px; }
+  .step.pending .t { color: var(--muted); }
+
+  /* Toast Notification Wrap */
+  .toast-wrap { position: fixed; right: 20px; bottom: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; max-width: min(460px, 92vw); }
+  .toast {
+    background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(12px);
+    border: 1px solid var(--border); border-left: 4px solid var(--accent);
+    border-radius: 10px; padding: 12px 16px; font-size: 13px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    animation: pop 0.2s cubic-bezier(0.16, 1, 0.3, 1); color: #f8fafc;
+  }
+  .toast.bad { border-left-color: var(--bad); }
+  .toast.ok { border-left-color: var(--ok); }
+  @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(0.96); } }
+
+  details > summary { cursor: pointer; font-size: 12.5px; color: var(--accent); padding: 4px 0; font-weight: 500; }
+  details[open] > summary { margin-bottom: 8px; }
+  pre {
+    background: rgba(2, 6, 23, 0.7); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px; overflow-x: auto; font-family: var(--mono); font-size: 11.5px;
+    margin: 8px 0 0; max-height: 360px; color: #cbd5e1;
+  }
+  .trace { border-left: 2px solid rgba(56, 189, 248, 0.3); padding-left: 12px; margin-left: 4px; }
+  .trace .ev { padding: 5px 0; font-size: 12.5px; }
+  .trace .ev .n { font-family: var(--mono); color: var(--accent); font-size: 11.5px; font-weight: 600; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span>M2X Exchange</span>
+    <small id="brandSub">connecting…</small>
+  </div>
+
+  <div class="header-badges">
+    <div class="asset-badge" title="Authorized and settled on Algorand">
+      <div>
+        <span class="label">Payment Asset</span>
+        <span class="value" id="assetDisplay">Algorand ASA #10458941</span>
+      </div>
+      <span class="net" id="assetNet">Algorand · TestNet</span>
+    </div>
+
+    <div class="status-pill" id="hdrAlgoStatus" title="AlgoKit Node Connection">
+      <span class="dot green"></span>
+      <span id="hdrAlgoTxt">Algorand Online</span>
+    </div>
+
+    <div class="status-pill" id="hdrVibeStatus" title="VibeKit Agent Sandbox Status">
+      <span class="dot blue"></span>
+      <span id="hdrVibeTxt">VibeKit Ready</span>
+    </div>
+  </div>
+
+  <div class="row" id="authBox"></div>
+</header>
+
+<nav id="tabs"></nav>
+<main id="view"><div class="empty"><span class="spinner"></span> initializing exchange dashboard…</div></main>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+"use strict";
+
+/* ========================================================================== *
+ * Application State
+ * ========================================================================== */
+var S = {
+  token: localStorage.getItem("m2x_token") || "",
+  user: JSON.parse(localStorage.getItem("m2x_user") || "null"),
+  asset: null,
+  services: [],
+  providers: [],
+  route: "",
+  timer: null,
+  live: false,
+};
+
+/* ========================================================================== *
+ * DOM Helper
+ * ========================================================================== */
+function h(tag, props) {
+  var n = document.createElement(tag), i, k, kid, kids = [];
+  for (i = 2; i < arguments.length; i++) kids = kids.concat(arguments[i]);
+  if (props) {
+    for (k in props) {
+      if (!Object.prototype.hasOwnProperty.call(props, k)) continue;
+      var v = props[k];
+      if (v === null || v === undefined || v === false) continue;
+      if (k === "class") n.className = v;
+      else if (k === "style") n.style.cssText = v;
+      else if (k.slice(0, 2) === "on" && typeof v === "function") n.addEventListener(k.slice(2), v);
+      else if (k === "value") n.value = v;
+      else if (k === "checked" || k === "disabled" || k === "selected") n[k] = !!v;
+      else n.setAttribute(k, v);
+    }
+  }
+  for (i = 0; i < kids.length; i++) {
+    kid = kids[i];
+    if (kid === null || kid === undefined || kid === false || kid === "") continue;
+    n.appendChild(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  }
+  return n;
+}
+var $ = function (id) { return document.getElementById(id); };
+
+/* ========================================================================== *
+ * Formatting Helpers
+ * ========================================================================== */
+function amount(micros) { return (Number(micros || 0) / 1e6).toFixed(6); }
+function toMicros(units) { return Math.round(Number(units || 0) * 1e6); }
+function short(s, n) { n = n || 18; s = String(s == null ? "" : s); return !s ? "—" : (s.length > n ? s.slice(0, n) + "…" : s); }
+function when(iso) {
+  if (!iso) return "—";
+  var d = new Date(iso);
+  return isNaN(d) ? String(iso) : d.toLocaleString();
+}
+function statusClass(s) {
+  if (["succeeded", "settled", "completed", "resolved_provider", "escrowed", "valid"].indexOf(s) >= 0) return "ok";
+  if (["failed", "cancelled", "expired", "refunded", "disputed", "rejected", "broken", "invalid"].indexOf(s) >= 0) return "bad";
+  return "warn";
+}
+
+/* ========================================================================== *
+ * API Communications
+ * ========================================================================== */
+function api(path, opts) {
+  opts = opts || {};
+  var headers = { "Content-Type": "application/json" };
+  if (S.token) headers["Authorization"] = "Bearer " + S.token;
+  if (opts.headers) for (var k in opts.headers) headers[k] = opts.headers[k];
+  return fetch(path, {
+    method: opts.method || "GET",
+    headers: headers,
+    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+  }).then(function (res) {
+    return res.text().then(function (text) {
+      var data = null;
+      if (text) { try { data = JSON.parse(text); } catch (e) { data = { detail: text }; } }
+      if (res.status === 401 && S.token) signOut(true);
+      return { ok: res.ok, status: res.status, data: data, headers: res.headers };
+    });
+  }).catch(function (err) {
+    return { ok: false, status: 0, data: { detail: "Network error: " + err.message }, headers: new Headers() };
+  });
+}
+
+function detail(res, fallback) {
+  var d = res && res.data;
+  if (!d) return fallback || ("Request failed (" + (res ? res.status : "?") + ")");
+  if (typeof d.detail === "string") return d.detail;
+  if (Array.isArray(d.detail)) {
+    return d.detail.map(function (e) {
+      var loc = Array.isArray(e.loc) ? e.loc[e.loc.length - 1] + ": " : "";
+      return loc + (e.msg || JSON.stringify(e));
+    }).join("; ");
+  }
+  if (d.error) return d.error;
+  return fallback || ("Request failed (" + res.status + ")");
+}
+
+function toast(message, kind) {
+  var t = h("div", { class: "toast " + (kind || "") }, message);
+  $("toasts").appendChild(t);
+  setTimeout(function () {
+    t.style.transition = "all .3s ease"; t.style.opacity = "0"; t.style.transform = "translateY(10px)";
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 320);
+  }, kind === "bad" ? 6000 : 4000);
+}
+
+function busy(btn, fn) {
+  var label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "…";
+  return Promise.resolve().then(fn).catch(function (e) {
+    toast(e && e.message ? e.message : String(e), "bad");
+  }).then(function () {
+    btn.disabled = false; btn.textContent = label;
+  });
+}
+
+function copy(text) {
+  var done = function () { toast("Copied to clipboard.", "ok"); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(String(text)).then(done, function () { fallbackCopy(text, done); });
+  } else fallbackCopy(text, done);
+}
+function fallbackCopy(text, done) {
+  var ta = h("textarea", { class: "sr" }); ta.value = String(text);
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand("copy"); done(); } catch (e) { toast("Could not copy.", "bad"); }
+  document.body.removeChild(ta);
+}
+function copyBtn(text, label) {
+  return h("button", { class: "link", onclick: function () { copy(text); } }, label || "copy");
+}
+
+/* ========================================================================== *
+ * UI Primitives
+ * ========================================================================== */
+function assetStrip(overrideDisplay, payable) {
+  var a = S.asset || {};
+  var ok = payable !== false;
+  return h("div", { class: "asset-strip" },
+    h("div", null,
+      h("div", { class: "k" }, "Payment Asset"),
+      h("div", { class: "v" }, overrideDisplay || a.display || "Algorand ASA #10458941")),
+    h("span", { class: "pill " + (ok ? "asa" : "bad") },
+      ok ? (a.blockchain || "Algorand") + " · " + (a.network || "TestNet") : "not payable here"));
+}
+
+function kv(pairs) {
+  var dl = h("dl", { class: "kv" });
+  pairs.forEach(function (p) {
+    if (!p) return;
+    dl.appendChild(h("dt", null, p[0]));
+    dl.appendChild(h("dd", null, p[1] instanceof Node ? p[1] : String(p[1] == null ? "—" : p[1])));
+  });
+  return dl;
+}
+
+function table(headers, rows) {
+  var t = h("table");
+  var hr = h("tr");
+  headers.forEach(function (col) {
+    hr.appendChild(h("th", { class: col && col.num ? "num" : null }, col && col.label !== undefined ? col.label : col));
+  });
+  t.appendChild(hr);
+  rows.forEach(function (cells) {
+    var tr = h("tr");
+    cells.forEach(function (c, i) {
+      var col = headers[i];
+      tr.appendChild(h("td", { class: col && col.num ? "num" : null }, c));
+    });
+    t.appendChild(tr);
+  });
+  return t;
+}
+
+function stat(label, value) {
+  return h("div", { class: "stat" }, h("div", { class: "n" }, String(value)), h("div", { class: "l" }, label));
+}
+
+function field(label, control) { return h("div", { class: "field" }, h("label", null, label), control); }
+function loading() { return h("div", { class: "empty" }, h("span", { class: "spinner" }), " loading data…"); }
+function empty(msg) { return h("div", { class: "empty" }, msg); }
+function errorBox(res, what) { return h("div", { class: "empty" }, detail(res, "Could not load " + what)); }
+function needAuth() {
+  return h("div", { class: "card" },
+    h("div", { class: "empty" }, "Sign in to access this view — demo credentials are prefilled in header."));
+}
+function jsonBlock(title, data) {
+  return h("details", null, h("summary", null, title), h("pre", null, JSON.stringify(data, null, 2)));
+}
+
+/* ========================================================================== *
+ * Auth & Session Management
+ * ========================================================================== */
+function signOut(expired) {
+  S.token = ""; S.user = null;
+  localStorage.removeItem("m2x_token"); localStorage.removeItem("m2x_user");
+  renderAuth();
+  if (expired) toast("Session expired — please sign in again.", "bad");
+  render();
+}
+
+function renderAuth() {
+  var box = $("authBox");
+  box.innerHTML = "";
+  if (S.user) {
+    box.appendChild(h("span", { class: "pill info" }, S.user.email));
+    box.appendChild(h("span", { class: "pill asa", id: "hdrBalance" }, "…"));
+    var quickTopup = h("button", { class: "ghost", onclick: function () {
+      busy(quickTopup, function () {
+        return api("/v1/auth/topup", { method: "POST", body: { amount_micros: 5000000 } }).then(function (res) {
+          if (res.ok) {
+            toast("Faucet credited +5.000000 units", "ok");
+            refreshBalance();
+          } else toast(detail(res, "Faucet error"), "bad");
+        });
+      });
+    } }, "+ Topup");
+    box.appendChild(quickTopup);
+    box.appendChild(h("button", { class: "ghost", onclick: function () { signOut(false); } }, "Sign out"));
+    refreshBalance();
+  } else {
+    var email = h("input", { placeholder: "email", value: "consumer@m2x.local", style: "width:180px" });
+    var pass = h("input", { type: "password", value: "demo-password-123", style: "width:130px" });
+    var submit = function (path, btn) {
+      return busy(btn, function () {
+        return api(path, { method: "POST", body: { email: email.value.trim(), password: pass.value } })
+          .then(function (res) {
+            if (!res.ok) { toast(detail(res, "Sign-in failed"), "bad"); return; }
+            S.token = res.data.access_token; S.user = res.data.user;
+            localStorage.setItem("m2x_token", S.token);
+            localStorage.setItem("m2x_user", JSON.stringify(S.user));
+            renderAuth();
+            toast("Signed in as " + S.user.email, "ok");
+            render();
+          });
+      });
+    };
+    var go = h("button", { class: "act", onclick: function () { submit("/v1/auth/login", go); } }, "Sign in");
+    var reg = h("button", { class: "ghost", onclick: function () { submit("/v1/auth/register", reg); } }, "Register");
+    var onEnter = function (e) { if (e.key === "Enter") go.click(); };
+    email.addEventListener("keydown", onEnter);
+    pass.addEventListener("keydown", onEnter);
+    box.appendChild(email); box.appendChild(pass); box.appendChild(go); box.appendChild(reg);
+  }
+}
+
+function refreshBalance() {
+  if (!S.user) return Promise.resolve(null);
+  return api("/v1/auth/balance").then(function (res) {
+    if (!res.ok) return null;
+    var txt = amount(res.data.available_micros) + " · escrow " + amount(res.data.escrow_micros);
+    var hdr = $("hdrBalance");
+    if (hdr) hdr.textContent = txt;
+    return res.data;
+  });
+}
+
+/* ========================================================================== *
+ * Catalog Cache
+ * ========================================================================== */
+function loadCatalog(force) {
+  if (S.services.length && !force) return Promise.resolve();
+  return Promise.all([api("/v1/services?limit=200"), api("/v1/providers?limit=100")])
+    .then(function (r) {
+      S.services = r[0].ok ? r[0].data : [];
+      S.providers = r[1].ok ? r[1].data : [];
+    });
+}
+
+function serviceById(id) {
+  for (var i = 0; i < S.services.length; i++) if (S.services[i].id === id) return S.services[i];
+  return null;
+}
+
+function sampleFor(service) {
+  if (!service) return { text: "machine-to-machine" };
+  switch (service.slug) {
+    case "prime-sieve": return { limit: 20000 };
+    case "stats-engine": return { numbers: [12, 7, 19, 3, 44, 21, 8] };
+    case "json-transformer": return { data: { user: { id: 7, tags: ["a", "b"] }, active: true } };
+    case "report-builder": return { goal: "quarterly report", input: { revenue: 42, region: "emea" } };
+    case "schema-validator":
+      return { document: { name: "probe", size: 12 },
+               schema: { required: ["name"], properties: { name: { type: "string" }, size: { type: "integer" } } } };
+    default: return { text: "machine-to-machine payload" };
+  }
+}
+
+/* ========================================================================== *
+ * Router & Views Navigation
+ * ========================================================================== */
+var VIEWS = [
+  ["overview", "Overview", viewOverview],
+  ["marketplace", "Marketplace", viewMarketplace],
+  ["discovery", "Discovery", viewDiscovery],
+  ["run", "Run a job", viewRun],
+  ["jobs", "Jobs", viewJobs],
+  ["agent", "Agent Planner", viewAgent],
+  ["algokit", "AlgoKit Explorer", viewAlgoKit],
+  ["vibekit", "VibeKit Sandbox", viewVibeKit],
+  ["schedules", "Schedules", viewSchedules],
+  ["payments", "Payments", viewPayments],
+  ["receipts", "Receipts", viewReceipts],
+  ["wallet", "Wallet", viewWallet],
+];
+
+function buildTabs() {
+  var nav = $("tabs");
+  nav.innerHTML = "";
+  VIEWS.forEach(function (v) {
+    nav.appendChild(h("button", {
+      class: S.route === v[0] ? "on" : "",
+      "data-tab": v[0],
+      onclick: function () { location.hash = v[0]; },
+    }, v[1]));
+  });
+}
+
+function render() {
+  var name = (location.hash || "#overview").slice(1).split("?")[0];
+  if (!VIEWS.some(function (v) { return v[0] === name; })) name = "overview";
+  S.route = name;
+  if (S.timer) { clearInterval(S.timer); S.timer = null; }
+  buildTabs();
+  var view = $("view");
+  view.innerHTML = "";
+  view.appendChild(loading());
+  var fn = VIEWS.filter(function (v) { return v[0] === name; })[0][2];
+  Promise.resolve()
+    .then(function () { return fn(); })
+    .then(function (node) {
+      if (S.route !== name) return;
+      view.innerHTML = "";
+      view.appendChild(node);
+    })
+    .catch(function (err) {
+      view.innerHTML = "";
+      view.appendChild(h("div", { class: "card" },
+        h("h2", null, "View rendering failure"),
+        h("p", { class: "hint" }, "An unexpected UI exception occurred."),
+        h("pre", null, String(err && err.stack ? err.stack : err))));
+    });
+}
+
+window.addEventListener("hashchange", render);
+window.addEventListener("error", function (e) {
+  toast("JavaScript error: " + (e.message || "see console"), "bad");
+});
+window.addEventListener("unhandledrejection", function (e) {
+  toast("Promise rejection: " + ((e.reason && e.reason.message) || e.reason || "unknown"), "bad");
+});
+
+/* ========================================================================== *
+ * View: Overview
+ * ========================================================================== */
+function viewOverview() {
+  return Promise.all([api("/v1/stats"), api("/v1/x402/asset"), api("/health"), api("/v1/receipts/chain")])
+    .then(function (r) {
+      var stats = r[0], asset = r[1], health = r[2], chain = r[3];
+      var wrap = h("div");
+
+      wrap.appendChild(h("div", { class: "spread" },
+        h("div", null, h("h2", null, "Exchange Overview"),
+          h("p", { class: "hint" }, "Real-time compute marketplace statistics & payment infrastructure health.")),
+        h("label", { class: "check" },
+          h("input", {
+            type: "checkbox", checked: S.live,
+            onchange: function (e) {
+              S.live = e.target.checked;
+              if (S.timer) { clearInterval(S.timer); S.timer = null; }
+              if (S.live) S.timer = setInterval(function () { if (S.route === "overview") render(); }, 5000);
+            },
+          }), " auto-refresh (5s)")));
+
+      if (stats.ok) {
+        var d = stats.data;
+        wrap.appendChild(h("div", { class: "tiles" },
+          stat("Providers", d.providers),
+          stat("Services", d.services),
+          stat("Total Jobs", d.jobs.total),
+          stat("Succeeded Jobs", d.jobs.succeeded),
+          stat("Receipts Issued", d.receipts.total),
+          stat("Settled Amount", amount(d.payments.settled_micros)),
+          stat("Refunded Amount", amount(d.payments.refunded_micros)),
+          stat("Platform Fees", amount(d.payments.platform_fee_micros))));
+      }
+
+      if (asset.ok) {
+        var a = asset.data;
+        var card = h("div", { class: "card", style: "margin-top:14px" },
+          h("div", { class: "spread" },
+            h("h3", null, "Algorand Payment Asset Validation"),
+            h("span", { class: "pill " + (a.ok ? "ok" : "bad") }, a.ok ? "Verified Active" : "Misconfigured")),
+          assetStrip(),
+          table(["Check", "Result", "Detail"], a.checks.map(function (c) {
+            return [c.check, h("span", { class: "pill " + (c.ok ? "ok" : "bad") }, c.ok ? "pass" : "fail"),
+                    h("span", { class: "mono" }, c.detail)];
+          })));
+        wrap.appendChild(card);
+      }
+
+      var side = h("div", { class: "grid", style: "margin-top:14px" });
+      if (chain.ok) {
+        side.appendChild(h("div", { class: "card" },
+          h("div", { class: "spread" }, h("h3", null, "Cryptographic Hash Chain"),
+            h("span", { class: "pill " + (chain.data.chain_valid ? "ok" : "bad") },
+              chain.data.chain_valid ? "Chain Valid" : "Chain Broken")),
+          kv([["Receipts Verified", chain.data.receipts_checked],
+              ["Head Hash", short(chain.data.head, 24)],
+              ["Broken Links", chain.data.broken.length]])));
+      }
+      if (health.ok) {
+        var c = health.data.components;
+        side.appendChild(h("div", { class: "card" },
+          h("h3", null, "Backend Services Health"),
+          kv([["Status", health.data.status],
+              ["Database", c.database.driver],
+              ["Cache System", c.cache.backend],
+              ["Storage Engine", c.storage.backend],
+              ["Sandbox Runner", c.sandbox.backend],
+              ["Scheduler", c.scheduler.running ? "Active (" + c.scheduler.iterations + " ticks)" : "Stopped"],
+              ["x402 Protocol", c.x402.network],
+              ["Settlement Rail", c.x402.settlement]])));
+      }
+      wrap.appendChild(side);
+
+      if (stats.ok && stats.data.leaderboard && stats.data.leaderboard.length) {
+        wrap.appendChild(h("div", { class: "card", style: "margin-top:14px" },
+          h("h3", null, "Provider Reputation Leaderboard"),
+          h("div", { class: "scroll" }, table(
+            ["Provider Name", "Tier", { label: "Reputation Score", num: true }, { label: "Jobs Processed", num: true }],
+            stats.data.leaderboard.map(function (p) {
+              return [p.name || p.slug, h("span", { class: "pill info" }, p.tier || "Standard"),
+                      Number(p.reputation_score || 0).toFixed(1), p.total_jobs];
+            })))));
+      }
+      return wrap;
+    });
+}
+
+/* ========================================================================== *
+ * View: Marketplace
+ * ========================================================================== */
+function viewMarketplace() {
+  return loadCatalog(true).then(function () {
+    var wrap = h("div");
+    var results = h("div", { class: "grid" });
+    var query = "";
+
+    var search = h("input", { placeholder: "Search providers, services, capabilities…", style: "min-width:260px",
+      oninput: function (e) { query = e.target.value.toLowerCase(); draw(); } });
+
+    var formHost = h("div");
+    var toggleForm = h("button", { class: "ghost", onclick: function () {
+      if (formHost.firstChild) { formHost.innerHTML = ""; return; }
+      formHost.appendChild(providerForm());
+    } }, "+ Register Provider");
+
+    wrap.appendChild(h("h2", null, "Compute & Tool Marketplace"));
+    wrap.appendChild(h("p", { class: "hint" },
+      "Available compute nodes & paid machine tools. Authorized over x402 and settled in Algorand ASA."));
+    wrap.appendChild(h("div", { class: "toolbar" }, search, S.user ? toggleForm : null,
+      h("button", { class: "ghost", onclick: function () { render(); } }, "Refresh Catalog")));
+    wrap.appendChild(formHost);
+    wrap.appendChild(results);
+
+    function draw() {
+      results.innerHTML = "";
+      var shown = S.providers.filter(function (p) {
+        if (!query) return true;
+        var own = S.services.filter(function (s) { return s.provider_id === p.id; });
+        var hay = (p.name + " " + p.slug + " " + (p.description || "") + " " +
+          own.map(function (s) { return s.name + " " + s.slug + " " + s.category; }).join(" ")).toLowerCase();
+        return hay.indexOf(query) >= 0;
+      });
+      if (!shown.length) { results.appendChild(empty("No matching providers found in marketplace.")); return; }
+      shown.forEach(function (p) { results.appendChild(providerCard(p)); });
+    }
+    draw();
+    return wrap;
+  });
+}
+
+function providerCard(p) {
+  var own = S.services.filter(function (s) { return s.provider_id === p.id; });
+  var card = h("div", { class: "card" });
+
+  card.appendChild(h("div", { class: "spread" },
+    h("div", null,
+      h("strong", { style: "font-size:15px" }, p.name),
+      h("div", { class: "hint tight mono" }, p.slug)),
+    h("div", { class: "row" },
+      h("span", { class: "pill " + (p.reputation_score >= 70 ? "ok" : p.reputation_score >= 40 ? "warn" : "bad") },
+        "rep " + Number(p.reputation_score).toFixed(1)),
+      p.is_verified ? h("span", { class: "pill ok" }, "verified") : null,
+      p.is_active ? null : h("span", { class: "pill bad" }, "inactive"))));
+
+  if (p.description) card.appendChild(h("p", { class: "hint", style: "margin:8px 0 0" }, p.description));
+  card.appendChild(assetStrip());
+
+  card.appendChild(h("div", { class: "hint tight" },
+    p.total_jobs + " total jobs · " + p.successful_jobs + " succeeded · " + p.failed_jobs + " failed" +
+    (p.regions && p.regions.length ? " · Regions: " + p.regions.join(", ") : "")));
+
+  if (own.length) {
+    card.appendChild(h("div", { class: "scroll", style: "margin-top:10px" },
+      table(["Service", { label: "Max Price", num: true }, ""], own.map(function (s) {
+        return [
+          h("div", null, h("div", { style: "font-weight:600" }, s.name), h("div", { class: "hint tight" }, s.category + " · " + s.runtime)),
+          amount(s.max_price_micros),
+          h("button", { class: "act", style: "padding:4px 10px; font-size:11.5px", onclick: function () { location.hash = "run?service=" + s.id; } }, "Run Tool"),
+        ];
+      }))));
+  } else {
+    card.appendChild(h("p", { class: "hint", style: "margin:10px 0 0" }, "No active services published yet."));
+  }
+
+  var actions = h("div", { class: "row", style: "margin-top:10px" });
+  var statsHost = h("div");
+  actions.appendChild(h("button", { class: "ghost", onclick: function (e) {
+    var btn = e.target;
+    if (statsHost.firstChild) { statsHost.innerHTML = ""; btn.textContent = "Provider Stats"; return; }
+    btn.textContent = "Hide Stats";
+    api("/v1/providers/" + p.id + "/stats").then(function (res) {
+      statsHost.innerHTML = "";
+      if (!res.ok) { statsHost.appendChild(errorBox(res, "stats")); return; }
+      var d = res.data;
+      statsHost.appendChild(kv([
+        ["Tier", d.tier], ["Success Rate", d.success_rate], ["Avg Latency", d.avg_latency_ms + " ms"],
+        ["Total Revenue", amount(d.revenue_micros)], ["Services Count", d.services],
+        ["Payment Asset", d.payment_asset ? d.payment_asset.display : "—"],
+      ]));
+    });
+  } }, "Provider Stats"));
+
+  if (S.user && p.owner_id === S.user.id) {
+    var svcHost = h("div");
+    actions.appendChild(h("button", { class: "ghost", onclick: function () {
+      if (svcHost.firstChild) { svcHost.innerHTML = ""; return; }
+      svcHost.appendChild(serviceForm(p));
+    } }, "+ Publish Service"));
+    card.appendChild(actions);
+    card.appendChild(statsHost);
+    card.appendChild(svcHost);
+  } else {
+    card.appendChild(actions);
+    card.appendChild(statsHost);
+  }
+  return card;
+}
+
+function providerForm() {
+  var slug = h("input", { placeholder: "my-provider-node" });
+  var name = h("input", { placeholder: "My Provider Node" });
+  var desc = h("input", { placeholder: "Description of provider capabilities" });
+  var payout = h("input", { placeholder: "Payout wallet address (blank = your account)" });
+  var assetId = h("input", { type: "number", value: (S.asset && S.asset.asset_id) || 10458941 });
+  var card = h("div", { class: "card", style: "margin-bottom:14px" });
+  var submit = h("button", { class: "act", onclick: function () {
+    busy(submit, function () {
+      return api("/v1/providers", { method: "POST", body: {
+        slug: slug.value.trim(), name: name.value.trim(), description: desc.value,
+        payout_address: payout.value.trim(), payment_asset_id: Number(assetId.value),
+      } }).then(function (res) {
+        if (!res.ok) { toast(detail(res, "Could not register provider"), "bad"); return; }
+        toast("Provider registered — settlement configured in " + res.data.payment_asset.display + ".", "ok");
+        render();
+      });
+    });
+  } }, "Register Provider");
+
+  card.appendChild(h("h3", null, "Register New Provider Node"));
+  card.appendChild(h("div", { class: "toolbar", style: "margin:0" },
+    field("Slug", slug), field("Name", name), field("Description", desc),
+    field("Payout Address", payout), field("Payment Asset ID", assetId), submit));
+  return card;
+}
+
+function serviceForm(provider) {
+  var slug = h("input", { placeholder: "custom-python-tool" });
+  var name = h("input", { placeholder: "Custom Python Tool" });
+  var category = h("select", null,
+    h("option", { value: "compute" }, "compute"), h("option", { value: "hash" }, "hash"),
+    h("option", { value: "text" }, "text"), h("option", { value: "analyze" }, "analyze"),
+    h("option", { value: "transform" }, "transform"), h("option", { value: "validate" }, "validate"));
+  var price = h("input", { type: "number", step: "0.001", value: "0.02" });
+  var code = h("textarea", null);
+  code.value = "import json, sys\ninput_data = json.load(sys.stdin)\nprint(json.dumps({'result': 'processed', 'data': input_data}))";
+  var card = h("div", { class: "card", style: "margin-top:12px" });
+  var submit = h("button", { class: "act", onclick: function () {
+    busy(submit, function () {
+      return api("/v1/providers/" + provider.id + "/services", { method: "POST", body: {
+        slug: slug.value.trim(), name: name.value.trim(), category: category.value,
+        runtime: "python", entrypoint: code.value,
+        base_price_micros: 500, max_price_micros: Math.max(toMicros(price.value), 1),
+        max_runtime_seconds: 20,
+      } }).then(function (res) {
+        if (!res.ok) { toast(detail(res, "Could not publish service"), "bad"); return; }
+        toast("Service published and listed in Bazaar discovery index.", "ok");
+        render();
+      });
+    });
+  } }, "Publish Service");
+
+  card.appendChild(h("h3", null, "Publish Service on " + provider.name));
+  card.appendChild(h("div", { class: "toolbar", style: "margin:0 0 10px" },
+    field("Slug", slug), field("Name", name), field("Category", category), field("Max Price (Units)", price)));
+  card.appendChild(field("Entrypoint (Python script reading stdin, writing JSON stdout)", code));
+  card.appendChild(h("div", { class: "row", style: "margin-top:10px" }, submit));
+  return card;
+}
+
+/* ========================================================================== *
+ * View: Discovery (Bazaar)
+ * ========================================================================== */
+function viewDiscovery() {
+  var wrap = h("div");
+  var results = h("div", { class: "grid" });
+  var q = h("input", { placeholder: "Search capabilities & tools…", style: "min-width:240px" });
+  var source = h("select", null,
+    h("option", { value: "" }, "All Sources"),
+    h("option", { value: "local" }, "Local Registry"),
+    h("option", { value: "goplausible" }, "Goplausible Index"));
+  var payable = h("input", { type: "checkbox", checked: true });
+
+  function search() {
+    results.innerHTML = "";
+    results.appendChild(loading());
+    var p = new URLSearchParams({ limit: "60" });
+    if (q.value.trim()) p.set("q", q.value.trim());
+    if (source.value) p.set("source", source.value);
+    if (payable.checked) p.set("payable_only", "true");
+    return api("/v1/bazaar/listings?" + p.toString()).then(function (res) {
+      results.innerHTML = "";
+      if (!res.ok) { results.appendChild(errorBox(res, "listings")); return; }
+      if (!res.data.items.length) { results.appendChild(empty("No listings matched your query.")); return; }
+      res.data.items.forEach(function (item) { results.appendChild(listingCard(item)); });
+    });
+  }
+
+  var searchBtn = h("button", { class: "act", onclick: function () { busy(searchBtn, search); } }, "Search Index");
+  var refreshBtn = h("button", { class: "ghost", onclick: function () {
+    busy(refreshBtn, function () {
+      if (!S.user) { toast("Sign in to refresh federated index.", "bad"); return; }
+      return api("/v1/bazaar/refresh", { method: "POST" }).then(function (res) {
+        if (!res.ok) { toast(detail(res, "Refresh failed"), "bad"); return; }
+        var r = res.data.remote || {};
+        toast("Published " + res.data.local_published + " local listings; remote index synced.", "ok");
+        return search();
+      });
+    });
+  } }, "Sync Federated Index");
+
+  q.addEventListener("keydown", function (e) { if (e.key === "Enter") searchBtn.click(); });
+
+  wrap.appendChild(h("h2", null, "Bazaar Discovery Index"));
+  wrap.appendChild(h("p", { class: "hint" },
+    "Federated registry of machine-to-machine service capabilities. Listings quoting the payment asset are marked payable."));
+  wrap.appendChild(h("div", { class: "toolbar" },
+    field("Query", q), field("Source", source),
+    h("label", { class: "check" }, payable, " Payable Only"), searchBtn, refreshBtn));
+  wrap.appendChild(results);
+  search();
+  return wrap;
+}
+
+function listingCard(item) {
+  var card = h("div", { class: "card" });
+  card.appendChild(h("div", { class: "spread" },
+    h("strong", null, item.name || item.resource),
+    h("span", { class: "pill " + (item.source === "local" ? "ok" : "info") }, item.source)));
+  if (item.description) card.appendChild(h("p", { class: "hint", style: "margin:8px 0 0" }, short(item.description, 160)));
+  card.appendChild(assetStrip(item.payable ? null : "ASA #" + (item.asset_id || "unknown"), item.payable));
+  card.appendChild(h("div", { class: "hint tight" },
+    amount(item.price_micros) + " max price · Reputation: " + Number(item.reputation_score).toFixed(1) + " · Network: " + (item.network || "—")));
+  if (item.service_id) {
+    card.appendChild(h("div", { class: "row", style: "margin-top:10px" },
+      h("button", { class: "act", style: "padding:4px 12px; font-size:12px", onclick: function () { location.hash = "run?service=" + item.service_id; } }, "Run Service")));
+  }
+  card.appendChild(jsonBlock("Raw Discovery Metadata", item));
+  return card;
+}
+
+/* ========================================================================== *
+ * View: Run a Job (Interactive x402 Console)
+ * ========================================================================== */
+function viewRun() {
+  return loadCatalog().then(function () {
+    var wrap = h("div");
+    var preselect = "";
+    var m = /service=([\w-]+)/.exec(location.hash);
+    if (m) preselect = m[1];
+
+    var select = h("select", null, S.services.map(function (s) {
+      return h("option", { value: s.id, selected: s.id === preselect },
+        s.name + " — " + amount(s.max_price_micros) + " max");
+    }));
+    var payload = h("textarea", null);
+    payload.value = JSON.stringify(sampleFor(serviceById(preselect || (S.services[0] || {}).id)), null, 2);
+    select.addEventListener("change", function () {
+      payload.value = JSON.stringify(sampleFor(serviceById(select.value)), null, 2);
+    });
+
+    var timeline = h("div");
+    var output = h("div");
+    var runBtn = h("button", { class: "act", onclick: function () { start(); } }, "Pay & Execute (x402)");
+
+    payload.addEventListener("keydown", function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") { e.preventDefault(); runBtn.click(); }
+    });
+
+    wrap.appendChild(h("h2", null, "Run Job via x402 Protocol"));
+    wrap.appendChild(h("p", { class: "hint" },
+      "Interactive 6-stage x402 payment lifecycle: Request → 402 Challenge → Authorization Signature → Preflight Checks → Sandbox Execution → Receipt Issuance."));
+    wrap.appendChild(h("div", { class: "card" },
+      h("div", { class: "toolbar", style: "margin:0 0 12px" },
+        h("div", { class: "field", style: "flex:2" }, h("label", null, "Target Service"), select),
+        h("div", { class: "field" }, h("label", null, "Available Balance"),
+          h("div", { class: "mono", id: "runBalance", style: "font-weight:600; padding:6px 0" }, "—"))),
+      field("Input Payload (JSON) — press Ctrl+Enter to submit", payload),
+      h("div", { class: "row", style: "margin-top:12px" }, runBtn,
+        h("button", { class: "ghost", onclick: function () {
+          payload.value = JSON.stringify(sampleFor(serviceById(select.value)), null, 2);
+        } }, "Reset Sample Payload"),
+        h("span", { class: "hint tight", id: "runNote" }, ""))));
+    wrap.appendChild(timeline);
+    wrap.appendChild(output);
+
+    refreshBalance().then(function (b) {
+      if (b && $("runBalance")) $("runBalance").textContent = amount(b.available_micros);
+    });
+
+    var STEP_DEFS = [
+      ["quote", "Resource Invocation Request"],
+      ["challenge", "402 Payment Required Challenge Received"],
+      ["sign", "Sign Cryptographic x402 Authorization"],
+      ["validate", "Pre-Execution Safety & Balance Preflight"],
+      ["execute", "Escrow Settlement & Sandbox Execution"],
+      ["receipt", "Signed Settlement Receipt Written to Chain"],
+    ];
+
+    function start() {
+      if (!S.user) { toast("Please sign in first.", "bad"); return; }
+      var serviceId = select.value;
+      if (!serviceId) { toast("Select a target service.", "bad"); return; }
+      var body;
+      try { body = JSON.parse(payload.value || "{}"); }
+      catch (e) { toast("Payload JSON syntax error: " + e.message, "bad"); return; }
+
+      output.innerHTML = "";
+      timeline.innerHTML = "";
+      var card = h("div", { class: "card", style: "margin-top:14px" }, h("h3", null, "x402 Protocol Execution Cycle"));
+      var list = h("div", { class: "steps" });
+      var nodes = {};
+      STEP_DEFS.forEach(function (d) {
+        var detailLine = h("div", { class: "d" }, "");
+        var row = h("div", { class: "step pending" },
+          h("div", { class: "dot" }, ""), h("div", null, h("div", { class: "t" }, d[1]), detailLine));
+        nodes[d[0]] = { row: row, detail: detailLine };
+        list.appendChild(row);
+      });
+      card.appendChild(list);
+      timeline.appendChild(card);
+
+      function mark(key, state, text) {
+        var n = nodes[key];
+        if (!n) return;
+        n.row.className = "step " + state;
+        n.row.firstChild.textContent = state === "done" ? "✓" : state === "fail" ? "✕" : "";
+        if (text !== undefined) n.detail.textContent = text;
+      }
+
+      runBtn.disabled = true;
+      $("runNote").textContent = "Executing x402 cycle…";
+      mark("quote", "active");
+
+      api("/v1/services/" + serviceId + "/invoke", { method: "POST", body: body })
+        .then(function (challenge) {
+          if (challenge.status !== 402) {
+            mark("quote", "fail", detail(challenge, "Expected 402 challenge"));
+            throw new Error(detail(challenge, "Expected 402 challenge"));
+          }
+          mark("quote", "done", "Job ID: " + challenge.data.job_id);
+          var req = challenge.data.accepts[0];
+          mark("challenge", "done",
+            "Asset: ASA #" + (req.extra && req.extra.assetId ? req.extra.assetId : req.asset) +
+            " · Max: " + amount(req.maxAmountRequired) + " · Network: " + req.network);
+          output.appendChild(challengeCard(challenge.data, req));
+
+          mark("sign", "active");
+          return api("/v1/payments/sign", { method: "POST", body: { payment_id: challenge.data.payment_id } })
+            .then(function (signed) {
+              if (!signed.ok) { mark("sign", "fail", detail(signed, "Signing failed")); throw new Error(detail(signed, "Signing failed")); }
+              mark("sign", "done", "Authorization payload signed for ASA #" + signed.data.asset_id);
+
+              mark("validate", "active");
+              return api("/v1/jobs/" + challenge.data.job_id + "/preflight").then(function (pre) {
+                if (pre.ok) {
+                  var failed = pre.data.failed || [];
+                  var blocking = failed.filter(function (f) { return f !== "payment_authorization"; });
+                  mark("validate", blocking.length ? "fail" : "done",
+                    blocking.length ? "Blocked: " + blocking.join(", ")
+                                    : "Network, Asset, Wallet & Seller preflight checks passed");
+                  output.appendChild(preflightCard(pre.data));
+                } else mark("validate", "done", "");
+
+                mark("execute", "active");
+                return api("/v1/services/" + serviceId + "/invoke", {
+                  method: "POST", body: body, headers: { "X-PAYMENT": signed.data.x_payment },
+                });
+              });
+            })
+            .then(function (paid) {
+              var settlement = null;
+              var raw = paid.headers.get("X-PAYMENT-RESPONSE");
+              if (raw) { try { settlement = JSON.parse(atob(raw)); } catch (e) { settlement = null; } }
+              var ok = paid.data && paid.data.status === "succeeded";
+              mark("execute", ok ? "done" : "fail",
+                settlement ? "Tx: " + short(settlement.transaction, 22) + " · Asset ID: " + settlement.assetId
+                           : detail(paid, "Execution failed"));
+              mark("receipt", ok ? "done" : "fail",
+                ok ? "Receipt recorded on cryptographic hash chain" : "Execution failed — escrow refunded");
+              output.appendChild(resultCard(paid, settlement));
+              toast(ok ? "Job executed and settled on Algorand!" : "Job failed — escrow refunded.", ok ? "ok" : "bad");
+              return refreshBalance().then(function (b) {
+                if (b && $("runBalance")) $("runBalance").textContent = amount(b.available_micros);
+              });
+            });
+        })
+        .catch(function (err) {
+          toast(err && err.message ? err.message : String(err), "bad");
+        })
+        .then(function () {
+          runBtn.disabled = false;
+          $("runNote").textContent = "";
+        });
+    }
+    return wrap;
+  });
+}
+
+function challengeCard(body, req) {
+  var card = h("div", { class: "card", style: "margin-top:14px" });
+  card.appendChild(h("div", { class: "spread" },
+    h("h3", null, "402 Payment Required Challenge"), h("span", { class: "pill info" }, "x402 v" + body.x402Version)));
+  card.appendChild(kv([
+    ["Blockchain", (req.extra && req.extra.blockchain) || "Algorand"],
+    ["Network", req.network],
+    ["Asset ID", (req.extra && req.extra.assetId) || req.asset],
+    ["Max Amount Required", amount(req.maxAmountRequired)],
+    ["Pay To Address", req.payTo],
+    ["Resource Endpoint", req.resource],
+    ["Job ID", body.job_id],
+    ["Payment ID", body.payment_id],
+  ]));
+  card.appendChild(jsonBlock("Full Payment Challenge Payload", body));
+  return card;
+}
+
+function preflightCard(data) {
+  var card = h("div", { class: "card", style: "margin-top:14px" });
+  card.appendChild(h("div", { class: "spread" },
+    h("h3", null, "Pre-Execution Preflight Diagnostics"),
+    h("span", { class: "pill " + (data.ok ? "ok" : "warn") }, data.ok ? "Clear to Run" : "Checks Pending")));
+  card.appendChild(table(["Diagnostic Check", "Result", "Details"], data.checks.map(function (c) {
+    return [c.check, h("span", { class: "pill " + (c.ok ? "ok" : "warn") }, c.ok ? "pass" : "pending"),
+            h("span", { class: "mono" }, c.detail)];
+  })));
+  return card;
+}
+
+function resultCard(res, settlement) {
+  var d = res.data || {};
+  var ok = d.status === "succeeded";
+  var card = h("div", { class: "card", style: "margin-top:14px" });
+  card.appendChild(h("div", { class: "spread" },
+    h("h3", null, "Execution Result & Settlement Proof"),
+    h("span", { class: "pill " + (ok ? "ok" : "bad") }, d.status || ("HTTP " + res.status))));
+  card.appendChild(kv([
+    ["Blockchain Rail", settlement ? settlement.blockchain : "Algorand"],
+    ["Network", settlement ? settlement.network : "—"],
+    ["Asset ID", settlement ? settlement.assetId : "—"],
+    ["Transaction Hash", settlement ? settlement.transaction : "—"],
+    ["Settlement Status", settlement ? (settlement.success ? "Settled" : "Pending") : "—"],
+    ["Charged Amount", amount(d.charged_micros)],
+    ["Refunded Amount", amount(d.refunded_micros)],
+    ["Integrity Verified", String(d.integrity_verified)],
+    ["Output Hash (SHA-256)", d.output_hash || "—"],
+  ]));
+  if (d.error) card.appendChild(h("pre", null, d.error));
+  if (d.result !== undefined && d.result !== null) card.appendChild(jsonBlock("Output Result JSON", d.result));
+  if (d.stdout) card.appendChild(jsonBlock("Standard Output (stdout)", d.stdout));
+  if (d.job_id) {
+    card.appendChild(h("div", { class: "row", style: "margin-top:12px" },
+      h("button", { class: "ghost", onclick: function () { location.hash = "jobs?job=" + d.job_id; } }, "View in Jobs"),
+      copyBtn(d.job_id, "copy job id")));
+  }
+  return card;
+}
+
+/* ========================================================================== *
+ * View: Jobs
+ * ========================================================================== */
+function viewJobs() {
+  if (!S.user) return Promise.resolve(needAuth());
+  var statuses = ["", "quoted", "awaiting_payment", "queued", "running", "succeeded", "failed",
+                  "cancelled", "refunded", "disputed"];
+  var filter = h("select", null, statuses.map(function (s) {
+    return h("option", { value: s }, s || "All Statuses");
+  }));
+  var list = h("div", { class: "stack" });
+  var wrap = h("div");
+  var focus = (/job=([\w-]+)/.exec(location.hash) || [])[1];
+
+  function load() {
+    list.innerHTML = "";
+    list.appendChild(loading());
+    var p = new URLSearchParams({ limit: "50" });
+    if (filter.value) p.set("status", filter.value);
+    return api("/v1/jobs?" + p.toString()).then(function (res) {
+      list.innerHTML = "";
+      if (!res.ok) { list.appendChild(errorBox(res, "jobs")); return; }
+      if (!res.data.length) { list.appendChild(empty("No jobs recorded yet. Run a job from the 'Run a job' tab.")); return; }
+      res.data.forEach(function (job) { list.appendChild(jobCard(job, job.id === focus, load)); });
+    });
+  }
+  filter.addEventListener("change", load);
+
+  wrap.appendChild(h("h2", null, "Jobs & Execution Lifecycle"));
+  wrap.appendChild(h("p", { class: "hint" }, "History of jobs requested or processed, with preflight validation, events, artifacts, and refunds."));
+  wrap.appendChild(h("div", { class: "toolbar" }, field("Filter Status", filter),
+    h("button", { class: "ghost", onclick: function () { load(); } }, "Refresh Jobs")));
+  wrap.appendChild(list);
+  load();
+  return wrap;
+}
+
+function jobCard(job, open, reload) {
+  var card = h("div", { class: "card" });
+  var svc = serviceById(job.service_id);
+  card.appendChild(h("div", { class: "spread" },
+    h("div", null,
+      h("strong", { style: "font-size:15px" }, svc ? svc.name : job.service_id),
+      h("div", { class: "hint tight mono" }, job.id)),
+    h("div", { class: "row" },
+      h("span", { class: "pill " + statusClass(job.status) }, job.status),
+      job.integrity_verified ? h("span", { class: "pill ok" }, "integrity ✓") : null)));
+
+  card.appendChild(h("div", { class: "hint", style: "margin:8px 0 0" },
+    "Quoted: " + amount(job.quoted_price_micros) + " · Charged: " + amount(job.final_price_micros) +
+    " · Fee: " + amount(job.platform_fee_micros) + " · Attempt: " + job.attempts + "/" + job.max_attempts +
+    " · Created: " + when(job.created_at)));
+
+  var body = h("div");
+  var expanded = false;
+  var toggle = h("button", { class: "link", onclick: function () {
+    expanded = !expanded;
+    toggle.textContent = expanded ? "Hide Details" : "View Details";
+    body.innerHTML = "";
+    if (expanded) loadDetails();
+  } }, open ? "Hide Details" : "View Details");
+
+  function loadDetails() {
+    body.appendChild(loading());
+    Promise.all([
+      api("/v1/jobs/" + job.id + "/events"),
+      api("/v1/jobs/" + job.id + "/artifacts"),
+      api("/v1/jobs/" + job.id + "/preflight"),
+    ]).then(function (r) {
+      body.innerHTML = "";
+      var events = r[0], artifacts = r[1], pre = r[2];
+
+      if (pre.ok) {
+        body.appendChild(h("h3", { style: "margin-top:12px" }, "Preflight Validation"));
+        body.appendChild(table(["Check", "Result", "Details"], pre.data.checks.map(function (c) {
+          return [c.check, h("span", { class: "pill " + (c.ok ? "ok" : "warn") }, c.ok ? "pass" : "pending"),
+                  h("span", { class: "mono" }, c.detail)];
+        })));
+      }
+
+      if (events.ok && events.data.length) {
+        body.appendChild(h("h3", { style: "margin-top:14px" }, "Event Lifecycle Trace"));
+        var trace = h("div", { class: "trace" });
+        events.data.forEach(function (e) {
+          trace.appendChild(h("div", { class: "ev" },
+            h("span", { class: "n" }, e.kind), " ", e.message || "",
+            h("div", { class: "hint tight" }, when(e.created_at) +
+              (e.data && e.data.asset_id ? " · Asset #" + e.data.asset_id : ""))));
+        });
+        body.appendChild(trace);
+      }
+
+      if (artifacts.ok && artifacts.data.length) {
+        body.appendChild(h("h3", { style: "margin-top:14px" }, "Job Output Artifacts"));
+        body.appendChild(table(["Artifact Name", { label: "Size (Bytes)", num: true }, "SHA-256", ""],
+          artifacts.data.map(function (a) {
+            return [a.name, a.size_bytes, h("span", { class: "mono" }, short(a.sha256, 20)),
+              h("button", { class: "ghost", onclick: function (e) { downloadArtifact(a, e.target); } }, "Download")];
+          })));
+      }
+
+      if (job.result) body.appendChild(jsonBlock("Job Result JSON", job.result));
+      if (job.error) body.appendChild(h("pre", null, job.error));
+    });
+  }
+
+  var actions = h("div", { class: "row", style: "margin-top:10px" }, toggle);
+  if (job.status === "queued") {
+    var ex = h("button", { class: "ghost", onclick: function () {
+      busy(ex, function () {
+        return api("/v1/jobs/" + job.id + "/execute", { method: "POST" }).then(function (res) {
+          toast(res.ok ? "Execution completed." : detail(res, "Could not execute"), res.ok ? "ok" : "bad");
+          if (res.ok) reload();
+        });
+      });
+    } }, "Execute Now");
+    actions.appendChild(ex);
+  }
+  if (job.status === "failed" && job.attempts < job.max_attempts) {
+    var rt = h("button", { class: "ghost", onclick: function () {
+      busy(rt, function () {
+        return api("/v1/jobs/" + job.id + "/retry?auto_pay=true", { method: "POST" }).then(function (res) {
+          toast(res.ok ? "Retry paid & queued." : detail(res, "Retry failed"), res.ok ? "ok" : "bad");
+          if (res.ok) reload();
+        });
+      });
+    } }, "Retry (Auto-Pay)");
+    actions.appendChild(rt);
+  }
+  if (["quoted", "awaiting_payment", "queued", "running"].indexOf(job.status) >= 0) {
+    var cx = h("button", { class: "danger", onclick: function () {
+      busy(cx, function () {
+        return api("/v1/jobs/" + job.id + "/cancel", { method: "POST" }).then(function (res) {
+          toast(res.ok ? "Cancelled and refunded." : detail(res, "Could not cancel"), res.ok ? "ok" : "bad");
+          if (res.ok) reload();
+        });
+      });
+    } }, "Cancel & Refund");
+    actions.appendChild(cx);
+  }
+  if (["succeeded", "failed"].indexOf(job.status) >= 0) {
+    var dp = h("button", { class: "ghost", onclick: function () {
+      var reason = prompt("Enter dispute reason (e.g., quality, non_delivery, overcharge):", "quality");
+      if (!reason) return;
+      busy(dp, function () {
+        return api("/v1/disputes", { method: "POST", body: { job_id: job.id, reason: reason, detail: "" } })
+          .then(function (res) {
+            if (!res.ok) { toast(detail(res, "Could not open dispute"), "bad"); return; }
+            return api("/v1/disputes/" + res.data.id + "/triage", { method: "POST" }).then(function (tri) {
+              toast(tri.ok ? "Dispute triaged: " + tri.data.status + " — " + (tri.data.resolution || "") : "Dispute created.",
+                    tri.ok ? "ok" : "");
+              reload();
+            });
+          });
+      });
+    } }, "Open Dispute");
+    actions.appendChild(dp);
+  }
+  actions.appendChild(copyBtn(job.id, "copy id"));
+  card.appendChild(actions);
+  card.appendChild(body);
+  if (open) { expanded = true; loadDetails(); }
+  return card;
+}
+
+function downloadArtifact(artifact, btn) {
+  var label = btn.textContent;
+  btn.disabled = true; btn.textContent = "…";
+  fetch("/v1/artifacts/" + artifact.id, { headers: { Authorization: "Bearer " + S.token } })
+    .then(function (res) {
+      if (!res.ok) throw new Error("Download failed (" + res.status + ")");
+      return res.blob();
+    })
+    .then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var a = h("a", { href: url, download: artifact.name });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      toast("Downloaded " + artifact.name + ".", "ok");
+    })
+    .catch(function (e) { toast(e.message, "bad"); })
+    .then(function () { btn.disabled = false; btn.textContent = label; });
+}
+
+/* ========================================================================== *
+ * View: Agent Planner
+ * ========================================================================== */
+function viewAgent() {
+  if (!S.user) return Promise.resolve(needAuth());
+  var wrap = h("div");
+  var goal = h("textarea", null);
+  goal.value = "hash this payload, then analyze the statistics of the digest";
+  var budget = h("input", { type: "number", step: "0.1", value: "1.0" });
+  var steps = h("input", { type: "number", value: "6", min: "1", max: "25" });
+  var out = h("div");
+
+  var previewBtn = h("button", { class: "ghost", onclick: function () {
+    busy(previewBtn, function () {
+      out.innerHTML = ""; out.appendChild(loading());
+      return api("/v1/plans/preview", { method: "POST", body: {
+        goal: goal.value, budget_micros: toMicros(budget.value), max_steps: Number(steps.value),
+      } }).then(function (res) {
+        out.innerHTML = "";
+        if (!res.ok) { out.appendChild(errorBox(res, "preview")); return; }
+        out.appendChild(previewCard(res.data));
+      });
+    });
+  } }, "Preview Plan (Dry Run)");
+
+  var runBtn = h("button", { class: "act", onclick: function () {
+    busy(runBtn, function () {
+      out.innerHTML = "";
+      out.appendChild(h("div", { class: "card" }, h("div", { class: "empty" },
+        h("span", { class: "spinner" }), " Autonomous agent discovering tools, authorizing payments & executing tasks…")));
+      return api("/v1/plans", { method: "POST", body: {
+        goal: goal.value, budget_micros: toMicros(budget.value), max_steps: Number(steps.value),
+      } }).then(function (res) {
+        out.innerHTML = "";
+        if (!res.ok) { out.appendChild(errorBox(res, "plan")); toast(detail(res, "Plan execution failed"), "bad"); return; }
+        out.appendChild(planCard(res.data));
+        toast("Plan " + res.data.status + " — Total spent: " + amount(res.data.spent_micros) + ".",
+              res.data.status === "completed" ? "ok" : "");
+        refreshBalance();
+      });
+    });
+  } }, "Execute Agent Plan");
+
+  wrap.appendChild(h("h2", null, "Autonomous Agent Planner"));
+  wrap.appendChild(h("p", { class: "hint" },
+    "Provide a high-level task goal. The agent automatically discovers appropriate microservices, negotiates x402 payment, executes steps, and returns aggregated output."));
+  wrap.appendChild(h("div", { class: "card" },
+    field("Agent Task Goal", goal),
+    h("div", { class: "toolbar", style: "margin:12px 0 0" },
+      field("Max Budget (Units)", budget), field("Max Step Limit", steps), previewBtn, runBtn)));
+  wrap.appendChild(out);
+
+  return api("/v1/plans?limit=10").then(function (res) {
+    if (res.ok && res.data.length) {
+      var host = h("div", { class: "card", style: "margin-top:14px" }, h("h3", null, "Recent Agent Execution History"));
+      host.appendChild(h("div", { class: "scroll" }, table(
+        ["Task Goal", "Status", { label: "Spent", num: true }, { label: "Budget", num: true }, "Engine", ""],
+        res.data.map(function (p) {
+          return [short(p.goal, 46), h("span", { class: "pill " + statusClass(p.status) }, p.status),
+                  amount(p.spent_micros), amount(p.budget_micros), p.engine,
+                  h("button", { class: "link", onclick: function () {
+                    out.innerHTML = ""; out.appendChild(planCard(p));
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  } }, "open plan")];
+        }))));
+      wrap.appendChild(host);
+    }
+    return wrap;
+  });
+}
+
+function previewCard(data) {
+  var card = h("div", { class: "card", style: "margin-top:14px" });
+  card.appendChild(h("div", { class: "spread" },
+    h("h3", null, "Agent Dry-Run Decomposition (Zero Cost)"),
+    h("span", { class: "pill info" }, data.engine)));
+  data.steps.forEach(function (s) {
+    var box = h("div", { style: "margin-top:12px" });
+    box.appendChild(h("div", null, h("strong", null, "Step " + (s.index + 1) + ": "), s.goal,
+      " ", h("span", { class: "pill" }, s.capability)));
+    if (s.candidates && s.candidates.length) {
+      box.appendChild(table(["Candidate Tool", "Provider Node", { label: "Estimated Price", num: true },
+                             { label: "Asset ID", num: false }, { label: "Rep Score", num: true }],
+        s.candidates.map(function (c) {
+          return [c.name, c.provider_slug, amount(c.price_micros),
+                  h("span", { class: "pill asa" }, "ASA #" + c.asset_id), c.score];
+        })));
+    } else {
+      box.appendChild(h("p", { class: "hint tight" }, "No matching provider node candidate for this step within budget."));
+    }
+    card.appendChild(box);
+  });
+  return card;
+}
+
+function planCard(plan) {
+  var card = h("div", { class: "card", style: "margin-top:14px" });
+  var result = plan.result || {};
+  card.appendChild(h("div", { class: "spread" },
+    h("div", null, h("h3", null, "Agent Plan Details"), h("div", { class: "hint tight" }, plan.goal)),
+    h("span", { class: "pill " + statusClass(plan.status) }, plan.status)));
+
+  if (result.payment_asset) card.appendChild(assetStrip(result.payment_asset.display));
+
+  card.appendChild(kv([
+    ["Total Spent", amount(plan.spent_micros) + " of " + amount(plan.budget_micros) + " units"],
+    ["Steps Executed", (result.steps_succeeded || 0) + " succeeded, " + (result.steps_failed || 0) + " failed"],
+    ["Planner Engine", plan.engine],
+  ]));
+
+  if (plan.steps && plan.steps.length) {
+    card.appendChild(h("h3", { style: "margin-top:14px" }, "Executed Plan Steps"));
+    card.appendChild(h("div", { class: "scroll" }, table(
+      ["#", "Step Goal", "Service", "Status", { label: "Price", num: true }, "Asset", ""],
+      plan.steps.map(function (s) {
+        return [s.index + 1, short(s.goal, 34), s.service_slug || "—",
+                h("span", { class: "pill " + statusClass(s.status) }, s.status),
+                amount(s.estimated_micros),
+                h("span", { class: "pill asa" }, "#" + s.asset_id),
+                s.job_id ? h("button", { class: "link", onclick: function () {
+                  location.hash = "jobs?job=" + s.job_id;
+                } }, "view job") : (s.error ? h("span", { class: "hint tight" }, short(s.error, 30)) : "")];
+      }))));
+  }
+
+  if (result.final_output !== undefined && result.final_output !== null) {
+    card.appendChild(jsonBlock("Aggregated Final Output", result.final_output));
+  }
+  if (plan.trace && plan.trace.length) {
+    var det = h("details");
+    det.appendChild(h("summary", null, "Agent Execution Trace (" + plan.trace.length + " events)"));
+    var trace = h("div", { class: "trace" });
+    plan.trace.forEach(function (t) {
+      trace.appendChild(h("div", { class: "ev" },
+        h("span", { class: "n" }, t.node), " ", t.message));
+    });
+    det.appendChild(trace);
+    card.appendChild(det);
+  }
+  return card;
+}
+
+/* ========================================================================== *
+ * View: AlgoKit Explorer
+ * ========================================================================== */
+function viewAlgoKit() {
+  var wrap = h("div");
+  wrap.appendChild(h("h2", null, "AlgoKit Integration & On-Chain Explorer"));
+  wrap.appendChild(h("p", { class: "hint" },
+    "Query live Algorand node status, wallet balances, ASA metrics, and block header metadata via algokit-utils."));
+
+  var grid = h("div", { class: "grid" });
+  wrap.appendChild(grid);
+
+  // Card 1: Node Status
+  var statusCard = h("div", { class: "card" });
+  statusCard.appendChild(h("h3", null, "Algorand Node & Network Status"));
+  statusCard.appendChild(loading());
+  grid.appendChild(statusCard);
+
+  api("/v1/algokit/status").then(function (res) {
+    statusCard.innerHTML = "";
+    statusCard.appendChild(h("div", { class: "spread" },
+      h("h3", null, "Algorand Node Status"),
+      h("span", { class: "pill ok" }, res.data.source || "Active")));
+    if (res.ok) {
+      var d = res.data;
+      statusCard.appendChild(kv([
+        ["Network", d.network || "testnet"],
+        ["Last Round", d.last_round || "—"],
+        ["Time Since Round", (d.time_since_last_round_ms || 0) + " ms"],
+        ["Catchup Time", d.catchup_time || 0],
+        ["Source Client", d.source],
+      ]));
+      if (d.note) statusCard.appendChild(h("p", { class: "hint tight", style: "margin-top:8px" }, d.note));
+    } else {
+      statusCard.appendChild(errorBox(res, "node status"));
+    }
+  });
+
+  // Card 2: Wallet Query
+  var walletCard = h("div", { class: "card" });
+  walletCard.appendChild(h("h3", null, "On-Chain Wallet Lookup"));
+  var addrInput = h("input", { value: "7ZUECA7HFLZTXENRV24SHLU4AVTENWQRE2XNE7J46MDWN2Q7CWQ5GOWCXM", style: "font-size:12px" });
+  var queryBtn = h("button", { class: "algo", onclick: function () { queryWallet(); } }, "Query Wallet");
+  var walletResHost = h("div", { style: "margin-top:12px" });
+
+  walletCard.appendChild(field("Algorand Wallet Address", addrInput));
+  walletCard.appendChild(h("div", { class: "row", style: "margin-top:10px" }, queryBtn));
+  walletCard.appendChild(walletResHost);
+  grid.appendChild(walletCard);
+
+  function queryWallet() {
+    var addr = addrInput.value.trim();
+    if (!addr) return;
+    walletResHost.innerHTML = "";
+    walletResHost.appendChild(loading());
+    api("/v1/algokit/wallet/" + encodeURIComponent(addr)).then(function (res) {
+      walletResHost.innerHTML = "";
+      if (!res.ok) { walletResHost.appendChild(errorBox(res, "wallet info")); return; }
+      var d = res.data;
+      walletResHost.appendChild(kv([
+        ["ALGO Balance", d.algo_balance + " ALGO (" + d.algo_balance_micro + " µALGO)"],
+        ["Min Required Balance", (d.min_balance_micro / 1e6) + " ALGO"],
+        ["Payment Asset (ASA #" + d.payment_asset_id + ")", (d.payment_asset_balance !== null ? d.payment_asset_balance + " units" : "Not Opted In")],
+        ["Opted-in ASAs Count", d.opted_in_assets],
+      ]));
+      if (d.assets && d.assets.length) {
+        walletResHost.appendChild(h("h3", { style: "margin-top:12px" }, "Opted-In Assets"));
+        walletResHost.appendChild(table(["ASA ID", "Balance", "Payment Asset?"], d.assets.map(function (a) {
+          return ["#" + a.asset_id, a.amount, a.is_payment_asset ? h("span", { class: "pill ok" }, "yes") : "no"];
+        })));
+      }
+    });
+  }
+  queryWallet();
+
+  // Card 3: ASA Inspector
+  var asaCard = h("div", { class: "card" });
+  asaCard.appendChild(h("h3", null, "ASA Asset Inspector"));
+  var asaInput = h("input", { type: "number", value: (S.asset && S.asset.asset_id) || 10458941 });
+  var asaBtn = h("button", { class: "algo", onclick: function () { inspectASA(); } }, "Inspect Asset");
+  var asaHost = h("div", { style: "margin-top:12px" });
+  asaCard.appendChild(field("ASA Asset ID", asaInput));
+  asaCard.appendChild(h("div", { class: "row", style: "margin-top:10px" }, asaBtn));
+  asaCard.appendChild(asaHost);
+  grid.appendChild(asaCard);
+
+  function inspectASA() {
+    var id = Number(asaInput.value);
+    if (!id) return;
+    asaHost.innerHTML = ""; asaHost.appendChild(loading());
+    api("/v1/algokit/asset/" + id).then(function (res) {
+      asaHost.innerHTML = "";
+      if (!res.ok) { asaHost.appendChild(errorBox(res, "asset info")); return; }
+      var d = res.data;
+      asaHost.appendChild(kv([
+        ["Asset Name", d.name || "—"],
+        ["Unit Name", d.unit_name || "—"],
+        ["Total Supply", d.total !== undefined ? d.total : "—"],
+        ["Decimals", d.decimals !== undefined ? d.decimals : "—"],
+        ["Mandated Exchange Asset?", d.is_mandated_asset ? h("span", { class: "pill ok" }, "Yes") : "No"],
+        ["Creator Address", short(d.creator, 20)],
+      ]));
+    });
+  }
+  inspectASA();
+
+  // Card 4: Network & Configuration
+  var netCard = h("div", { class: "card" });
+  netCard.appendChild(h("h3", null, "AlgoKit Diagnostics & Network Rules"));
+  netCard.appendChild(loading());
+  grid.appendChild(netCard);
+
+  Promise.all([api("/v1/algokit/network"), api("/v1/algokit/configuration")]).then(function (r) {
+    netCard.innerHTML = "";
+    var net = r[0], cfg = r[1];
+    if (net.ok) {
+      var d = net.data;
+      netCard.appendChild(kv([
+        ["Genesis ID", d.genesis_id || "testnet-v1.0"],
+        ["Minimum Fee Floor", (d.min_fee || 1000) + " microAlgos"],
+        ["Payment Asset ID", d.payment_asset ? "#" + d.payment_asset.asset_id : "—"],
+      ]));
+    }
+    if (cfg.ok) {
+      var c = cfg.data;
+      netCard.appendChild(h("div", { style: "margin-top:10px" },
+        h("span", { class: "pill " + (c.algokit_available ? "ok" : "info") },
+          c.algokit_available ? "AlgoKit Utils Installed v" + c.algokit_utils_version : "AlgoKit Mode: Native Subprocess")));
+    }
+  });
+
+  return wrap;
+}
+
+/* ========================================================================== *
+ * View: VibeKit AI Agent Sandbox
+ * ========================================================================== */
+function viewVibeKit() {
+  var wrap = h("div");
+  wrap.appendChild(h("h2", null, "VibeKit Agent Sandbox & Execution Engine"));
+  wrap.appendChild(h("p", { class: "hint" },
+    "Execute AI agent tasks & sandboxed code securely in an isolated environment billed over x402."));
+
+  var card = h("div", { class: "card" });
+  var grid = h("div", { style: "display:grid; grid-template-columns: 1fr 1fr; gap:20px;" });
+
+  var left = h("div");
+  var right = h("div");
+
+  var lang = h("select", null,
+    h("option", { value: "python" }, "Python 3.11"),
+    h("option", { value: "javascript" }, "JavaScript (Node.js)"),
+    h("option", { value: "typescript" }, "TypeScript"),
+    h("option", { value: "bash" }, "Bash Script"));
+
+  var model = h("select", null,
+    h("option", { value: "builtin" }, "Built-in Sandbox"),
+    h("option", { value: "claude" }, "Claude 3.5 Sonnet"),
+    h("option", { value: "gemini" }, "Gemini 1.5 Pro"),
+    h("option", { value: "gpt-4o" }, "GPT-4o"));
+
+  var task = h("textarea", { style: "min-height:70px" }, "Fetch data and compute summary metrics.");
+  var code = h("textarea", { style: "min-height:140px" }, "import json, sys\nprint(json.dumps({'status': 'success', 'weather': 'sunny', 'temperature': 72}))");
+
+  var term = h("div", { class: "terminal-console" }, "[VibeKit System] Sandbox initialized. Ready for execution.\n");
+
+  var runBtn = h("button", { class: "vibe", onclick: function () { runVibe(); } }, "Execute in Sandbox");
+  var planBtn = h("button", { class: "ghost", onclick: function () { planVibe(); } }, "Generate Dry-Run Plan");
+
+  left.appendChild(h("h3", null, "Sandbox Configuration"));
+  left.appendChild(h("div", { class: "toolbar", style: "margin:0 0 10px" }, field("Runtime Language", lang), field("Agent Model", model)));
+  left.appendChild(field("Task Prompt", task));
+  left.appendChild(field("Source Code", code));
+  left.appendChild(h("div", { class: "row", style: "margin-top:12px" }, runBtn, planBtn));
+
+  right.appendChild(h("h3", null, "Live Sandbox Console"));
+  right.appendChild(term);
+
+  var infoHost = h("div", { style: "margin-top:14px" });
+  right.appendChild(infoHost);
+
+  grid.appendChild(left); grid.appendChild(right);
+  card.appendChild(grid);
+  wrap.appendChild(card);
+
+  api("/v1/vibekit/info").then(function (res) {
+    if (res.ok) {
+      infoHost.appendChild(h("div", { class: "spread" },
+        h("span", { class: "pill vibe" }, "Backend: " + res.data.backend),
+        h("span", { class: "pill info" }, "Max Timeout: " + res.data.max_timeout_seconds + "s")));
+      infoHost.appendChild(h("p", { class: "hint tight", style: "margin-top:6px" }, res.data.note));
+    }
+  });
+
+  function runVibe() {
+    if (!S.user) { toast("Sign in to execute in sandbox.", "bad"); return; }
+    term.textContent = "[VibeKit System] Provisioning isolated execution sandbox...\n";
+    runBtn.disabled = true;
+    setTimeout(function () {
+      term.textContent += "[VibeKit System] Injecting " + lang.value + " runtime environment...\n";
+      setTimeout(function () {
+        term.textContent += "[Agent Execution] Running task code...\n\n";
+        api("/v1/vibekit/run", {
+          method: "POST",
+          body: { task: task.value, language: lang.value, code: code.value, agent_model: model.value, max_seconds: 30 }
+        }).then(function (res) {
+          runBtn.disabled = false;
+          if (!res.ok) {
+            term.textContent += "\n[System Error] " + detail(res, "Execution failed");
+            toast(detail(res, "VibeKit execution failed"), "bad");
+            return;
+          }
+          var d = res.data;
+          if (d.stdout) term.textContent += d.stdout + "\n";
+          if (d.stderr) term.textContent += "[stderr] " + d.stderr + "\n";
+          term.textContent += "\n[VibeKit System] Task " + d.status.toUpperCase() + " | Exit code: " + d.exit_code + " | Duration: " + d.wall_ms + "ms\n";
+          term.textContent += "[VibeKit System] Sandbox session destroyed: " + d.session_id;
+          toast("Sandbox execution " + d.status + " in " + d.wall_ms + "ms", d.status === "succeeded" ? "ok" : "bad");
+        });
+      }, 400);
+    }, 300);
+  }
+
+  function planVibe() {
+    if (!S.user) { toast("Sign in to generate plan.", "bad"); return; }
+    term.textContent = "[VibeKit Planner] Decomposing task into execution steps...\n\n";
+    api("/v1/vibekit/plan", {
+      method: "POST",
+      body: { task: task.value, language: lang.value, code: code.value, agent_model: model.value }
+    }).then(function (res) {
+      if (!res.ok) { term.textContent += "[Error] " + detail(res, "Planning failed"); return; }
+      term.textContent += JSON.stringify(res.data, null, 2);
+    });
+  }
+
+  return wrap;
+}
+
+/* ========================================================================== *
+ * View: Schedules
+ * ========================================================================== */
+function viewSchedules() {
+  if (!S.user) return Promise.resolve(needAuth());
+  return loadCatalog().then(function () {
+    var wrap = h("div");
+    var list = h("div");
+    var service = h("select", null, S.services.map(function (s) {
+      return h("option", { value: s.id }, s.name);
+    }));
+    var name = h("input", { placeholder: "nightly-digest-job" });
+    var interval = h("input", { type: "number", placeholder: "seconds", value: "3600" });
+    var cron = h("input", { placeholder: "e.g. */5 * * * *" });
+    var cronNote = h("span", { class: "hint tight", style: "color:var(--accent)" }, "");
+    var maxPrice = h("input", { type: "number", step: "0.01", value: "0.10" });
+
+    var t = null;
+    cron.addEventListener("input", function () {
+      clearTimeout(t);
+      var expr = cron.value.trim();
+      if (!expr) { cronNote.textContent = ""; return; }
+      t = setTimeout(function () {
+        api("/v1/schedules/cron/validate?expression=" + encodeURIComponent(expr)).then(function (res) {
+          if (!res.ok) { cronNote.textContent = ""; return; }
+          cronNote.textContent = res.data.valid
+            ? "Valid: " + res.data.description + " — Next fire: " + when(res.data.next_fire_at)
+            : "Invalid cron expression: " + res.data.error;
+        });
+      }, 300);
+    });
+
+    var create = h("button", { class: "act", onclick: function () {
+      busy(create, function () {
+        var body = {
+          name: name.value.trim(), service_id: service.value,
+          payload: sampleFor(serviceById(service.value)),
+          max_price_micros: toMicros(maxPrice.value),
+        };
+        if (cron.value.trim()) body.cron = cron.value.trim();
+        else body.interval_seconds = Number(interval.value);
+        return api("/v1/schedules", { method: "POST", body: body }).then(function (res) {
+          toast(res.ok ? "Schedule created." : detail(res, "Could not create schedule"), res.ok ? "ok" : "bad");
+          if (res.ok) load();
+        });
+      });
+    } }, "Create Schedule");
+
+    function load() {
+      list.innerHTML = "";
+      list.appendChild(loading());
+      api("/v1/schedules").then(function (res) {
+        list.innerHTML = "";
+        if (!res.ok) { list.appendChild(errorBox(res, "schedules")); return; }
+        if (!res.data.length) { list.appendChild(empty("No recurring schedules created yet.")); return; }
+        list.appendChild(h("div", { class: "card scroll" }, table(
+          ["Schedule Name", "Target Service", "Cadence / Cron", "Next Fire Time", { label: "Runs", num: true }, "State", ""],
+          res.data.map(function (s) {
+            var svc = serviceById(s.service_id);
+            var toggleBtn = h("button", { class: "ghost", onclick: function () {
+              busy(toggleBtn, function () {
+                return api("/v1/schedules/" + s.id + "?enabled=" + (!s.enabled), { method: "PATCH" })
+                  .then(function (r) {
+                    toast(r.ok ? (s.enabled ? "Schedule paused." : "Schedule resumed.") : detail(r, "Toggle failed"), r.ok ? "ok" : "bad");
+                    if (r.ok) load();
+                  });
+              });
+            } }, s.enabled ? "Pause" : "Resume");
+            var del = h("button", { class: "danger", onclick: function () {
+              busy(del, function () {
+                return api("/v1/schedules/" + s.id, { method: "DELETE" }).then(function (r) {
+                  toast(r.ok ? "Schedule deleted." : detail(r, "Delete failed"), r.ok ? "ok" : "bad");
+                  if (r.ok) load();
+                });
+              });
+            } }, "Delete");
+            return [s.name || "—", svc ? svc.name : s.service_id,
+                    s.cron || (s.interval_seconds + "s"), when(s.next_run_at), s.run_count,
+                    h("span", { class: "pill " + (s.enabled ? "ok" : "") }, s.enabled ? "enabled" : "paused"),
+                    h("div", { class: "row" }, toggleBtn, del)];
+          }))));
+      });
+    }
+
+    wrap.appendChild(h("h2", null, "Recurring Job Schedules"));
+    wrap.appendChild(h("p", { class: "hint" },
+      "Automated cron or interval-based jobs. Custodial payment keys automatically sign x402 challenges when triggered."));
+    wrap.appendChild(h("div", { class: "card" },
+      h("h3", null, "Create Scheduled Job"),
+      h("div", { class: "toolbar", style: "margin:0" },
+        field("Name", name), field("Service", service),
+        field("Interval (seconds)", interval), field("or Cron Expression", cron),
+        field("Max Price (Units)", maxPrice), create),
+      h("div", { style: "margin-top:8px" }, cronNote)));
+    wrap.appendChild(h("div", { style: "margin-top:14px" }, list));
+    load();
+    return wrap;
+  });
+}
+
+/* ========================================================================== *
+ * View: Payments
+ * ========================================================================== */
+function viewPayments() {
+  if (!S.user) return Promise.resolve(needAuth());
+  return Promise.all([api("/v1/payments?limit=100"), api("/v1/refunds?limit=100")]).then(function (r) {
+    var pay = r[0], ref = r[1];
+    var wrap = h("div");
+    wrap.appendChild(h("h2", null, "Payments & Settlement Audit Log"));
+    wrap.appendChild(h("p", { class: "hint" }, "Complete history of x402 payment authorizations, escrow releases, and refunds."));
+
+    if (!pay.ok) { wrap.appendChild(errorBox(pay, "payments")); return wrap; }
+    if (!pay.data.length) { wrap.appendChild(empty("No payments processed yet.")); return wrap; }
+
+    wrap.appendChild(h("div", { class: "card scroll" }, table(
+      ["Payment ID", "Status", "Network", "Asset Badge", { label: "Authorized", num: true },
+       { label: "Captured", num: true }, { label: "Refunded", num: true }, "Transaction Hash"],
+      pay.data.map(function (p) {
+        return [
+          h("span", { class: "mono" }, short(p.id, 16)),
+          h("span", { class: "pill " + statusClass(p.status) }, p.status),
+          p.network,
+          h("span", { class: "pill asa" }, "ASA #" + p.asset_id),
+          amount(p.amount_micros), amount(p.captured_micros), amount(p.refunded_micros),
+          p.tx_hash ? h("span", { class: "row" }, h("span", { class: "mono" }, short(p.tx_hash, 18)), copyBtn(p.tx_hash)) : "—",
+        ];
+      }))));
+
+    if (ref.ok && ref.data.length) {
+      wrap.appendChild(h("div", { class: "card scroll", style: "margin-top:14px" },
+        h("h3", null, "Issued Refunds History"),
+        table(["Refund ID", "Reason", "Asset", { label: "Refund Amount", num: true }, "Timestamp"],
+          ref.data.map(function (x) {
+            return [h("span", { class: "mono" }, short(x.id, 16)), x.reason,
+                    h("span", { class: "pill asa" }, "ASA #" + x.asset_id),
+                    amount(x.amount_micros), when(x.created_at)];
+          }))));
+    }
+    return wrap;
+  });
+}
+
+/* ========================================================================== *
+ * View: Receipts
+ * ========================================================================== */
+function viewReceipts() {
+  if (!S.user) return Promise.resolve(needAuth());
+  return Promise.all([api("/v1/receipts?limit=50"), api("/v1/receipts/chain")]).then(function (r) {
+    var list = r[0], chain = r[1];
+    var wrap = h("div");
+    wrap.appendChild(h("h2", null, "Signed Hash-Chained Receipts"));
+    wrap.appendChild(h("p", { class: "hint" },
+      "Cryptographically signed settlement receipts forming an unalterable hash chain."));
+
+    if (chain.ok) {
+      var verifyAll = h("button", { class: "ghost", onclick: function () {
+        busy(verifyAll, function () {
+          return api("/v1/receipts/chain").then(function (res) {
+            if (!res.ok) { toast(detail(res, "Verification failed"), "bad"); return; }
+            toast(res.data.chain_valid
+              ? "All " + res.data.receipts_checked + " receipts verified! Cryptographic chain intact."
+              : res.data.broken.length + " broken link(s) detected.", res.data.chain_valid ? "ok" : "bad");
+          });
+        });
+      } }, "Re-verify Hash Chain");
+      wrap.appendChild(h("div", { class: "card" }, h("div", { class: "row" },
+        h("span", { class: "pill " + (chain.data.chain_valid ? "ok" : "bad") },
+          chain.data.chain_valid ? "Chain Verified Intact" : "Chain Integrity Broken"),
+        h("span", { class: "hint tight" },
+          chain.data.receipts_checked + " total receipts · Head Hash: " + short(chain.data.head, 24)),
+        verifyAll)));
+    }
+
+    if (!list.ok) { wrap.appendChild(errorBox(list, "receipts")); return wrap; }
+    if (!list.data.length) { wrap.appendChild(empty("No receipts issued yet. Run a job to generate a receipt.")); return wrap; }
+
+    var host = h("div", { class: "stack", style: "margin-top:14px" });
+    list.data.forEach(function (rc) { host.appendChild(receiptCard(rc)); });
+    wrap.appendChild(host);
+    return wrap;
+  });
+}
+
+function receiptCard(rc) {
+  var pay = (rc.body && rc.body.payment) || {};
+  var status = String(pay.settlement_status || "unknown");
+  var card = h("div", { class: "card" });
+
+  card.appendChild(h("div", { class: "spread" },
+    h("strong", { style: "font-size:15px" }, "Receipt #" + rc.sequence),
+    h("span", { class: "pill " + statusClass(status) }, status)));
+
+  card.appendChild(kv([
+    ["Blockchain", pay.blockchain || "Algorand"],
+    ["Network", pay.network || "TestNet"],
+    ["Asset ID", pay.asset_id == null ? "—" : pay.asset_id],
+    ["Transaction ID", pay.transaction_id || "—"],
+    ["Settlement Status", status],
+    ["Charged Amount", amount(pay.charged_micros)],
+    ["Refunded Amount", amount(pay.refunded_micros)],
+    ["Job ID", rc.job_id],
+    ["Chain Link Hash", rc.chain_hash],
+  ]));
+
+  var note = h("span", { class: "hint tight", style: "color:var(--accent)" });
+  var verify = h("button", { class: "ghost", onclick: function () {
+    busy(verify, function () {
+      return api("/v1/receipts/" + rc.id + "/verify").then(function (res) {
+        if (!res.ok) { note.textContent = detail(res, "Verification failed"); return; }
+        if (res.data.valid) {
+          note.textContent = "Signature, payload hash & link verified ✓";
+        } else {
+          var bad = Object.keys(res.data.checks).filter(function (k) { return !res.data.checks[k]; });
+          note.textContent = "INVALID: " + bad.join(", ");
+        }
+      });
+    });
+  } }, "Verify Signature & Hash");
+
+  card.appendChild(h("div", { class: "row", style: "margin-top:10px" },
+    verify, copyBtn(rc.chain_hash, "copy chain hash"), note));
+  card.appendChild(jsonBlock("Full Cryptographic Receipt Body", rc.body));
+  return card;
+}
+
+/* ========================================================================== *
+ * View: Wallet & Auth Keys
+ * ========================================================================== */
+function viewWallet() {
+  if (!S.user) return Promise.resolve(needAuth());
+  return Promise.all([api("/v1/auth/balance"), api("/v1/auth/api-keys")]).then(function (r) {
+    var bal = r[0], keys = r[1];
+    var wrap = h("div");
+    wrap.appendChild(h("h2", null, "Wallet & Account Credentials"));
+    wrap.appendChild(h("p", { class: "hint" },
+      "Balances are denominated in micro-units of the exchange payment asset."));
+
+    if (bal.ok) {
+      var b = bal.data;
+      var card = h("div", { class: "card" });
+      card.appendChild(assetStrip());
+      card.appendChild(h("div", { class: "tiles" },
+        stat("Available Balance", amount(b.available_micros)),
+        stat("In Escrow", amount(b.escrow_micros)),
+        stat("Lifetime Earned", amount(b.lifetime_earned_micros)),
+        stat("Lifetime Spent", amount(b.lifetime_spent_micros))));
+
+      var topup = h("input", { type: "number", step: "1", value: "5" });
+      var faucet = h("button", { class: "act", onclick: function () {
+        busy(faucet, function () {
+          return api("/v1/auth/topup", { method: "POST", body: { amount_micros: toMicros(topup.value) } })
+            .then(function (res) {
+              if (!res.ok) { toast(detail(res, "Faucet error"), "bad"); return; }
+              toast("Testnet funds credited! New balance: " + amount(res.data.available_micros) + ".", "ok");
+              refreshBalance(); render();
+            });
+        });
+      } }, "Credit TestNet Funds");
+      card.appendChild(h("div", { class: "toolbar", style: "margin:14px 0 0" },
+        field("Faucet Credit Amount (Units)", topup), faucet));
+      card.appendChild(kv([
+        ["Account ID", b.account_id],
+        ["Wallet Address", h("span", { class: "row" }, S.user.wallet_address || "—",
+          S.user.wallet_address ? copyBtn(S.user.wallet_address) : null)],
+        ["User Role", S.user.role],
+      ]));
+      wrap.appendChild(card);
+    }
+
+    var keyCard = h("div", { class: "card", style: "margin-top:14px" });
+    keyCard.appendChild(h("h3", null, "Machine API Keys (MCP & A2A)"));
+    keyCard.appendChild(h("p", { class: "hint" },
+      "Credentials for automated agents connecting via Model Context Protocol (MCP) or Agent-to-Agent (A2A)."));
+    var keyName = h("input", { placeholder: "agent-worker-1" });
+    var out = h("div");
+    var mk = h("button", { class: "act", onclick: function () {
+      busy(mk, function () {
+        return api("/v1/auth/api-keys", { method: "POST", body: { name: keyName.value.trim() || "default", scopes: [] } })
+          .then(function (res) {
+            if (!res.ok) { toast(detail(res, "Could not create API key"), "bad"); return; }
+            out.innerHTML = "";
+            out.appendChild(h("div", { class: "card", style: "margin-top:12px" },
+              h("h3", null, "Copy secret now — it will not be displayed again"),
+              h("pre", null, res.data.key),
+              h("div", { class: "row" }, copyBtn(res.data.key, "copy secret"))));
+            render();
+          });
+      });
+    } }, "Create API Key");
+    keyCard.appendChild(h("div", { class: "toolbar", style: "margin:0" }, field("Key Name", keyName), mk));
+    keyCard.appendChild(out);
+
+    if (keys.ok && keys.data.length) {
+      keyCard.appendChild(h("div", { class: "scroll", style: "margin-top:12px" }, table(
+        ["Key Name", "Prefix", "Created", "Last Used", "Status", ""],
+        keys.data.map(function (k) {
+          var rv = h("button", { class: "danger", disabled: k.revoked, onclick: function () {
+            busy(rv, function () {
+              return api("/v1/auth/api-keys/" + k.id, { method: "DELETE" }).then(function (res) {
+                toast(res.ok ? "API Key revoked." : detail(res, "Could not revoke key"), res.ok ? "ok" : "bad");
+                if (res.ok) render();
+              });
+            });
+          } }, "Revoke");
+          return [k.name, h("span", { class: "mono" }, k.prefix), when(k.created_at),
+                  k.last_used_at ? when(k.last_used_at) : "never",
+                  h("span", { class: "pill " + (k.revoked ? "bad" : "ok") }, k.revoked ? "revoked" : "active"), rv];
+        }))));
+    }
+    wrap.appendChild(keyCard);
+
+    var secretCard = h("div", { class: "card", style: "margin-top:14px" });
+    var secretOut = h("div");
+    secretCard.appendChild(h("h3", null, "x402 Payment Signing Key Secret"));
+    secretCard.appendChild(h("p", { class: "hint" },
+      "Secret key used to generate signed x402 headers client-side. Keep private."));
+    var reveal = h("button", { class: "ghost", onclick: function () {
+      busy(reveal, function () {
+        return api("/v1/auth/payment-secret").then(function (res) {
+          if (!res.ok) { toast(detail(res, "Unavailable"), "bad"); return; }
+          secretOut.innerHTML = "";
+          secretOut.appendChild(kv([
+            ["Payer Address", res.data.payer],
+            ["Signing Secret", h("span", { class: "row" }, res.data.payment_secret, copyBtn(res.data.payment_secret))],
+          ]));
+        });
+      });
+    } }, "Reveal Signing Secret");
+    secretCard.appendChild(h("div", { class: "row" }, reveal));
+    secretCard.appendChild(secretOut);
+    wrap.appendChild(secretCard);
+
+    return wrap;
+  });
+}
+
+/* ========================================================================== *
+ * Application Initialization
+ * ========================================================================== */
+api("/v1/config").then(function (cfg) {
+  if (cfg.ok) {
+    S.asset = cfg.data.payment_asset;
+    $("assetDisplay").textContent = S.asset.display;
+    $("assetNet").textContent = S.asset.blockchain + " · " + S.asset.network;
+    $("brandSub").textContent = cfg.data.app_name + " v" + cfg.data.version + " · " + cfg.data.env;
+    document.title = "M2X · " + S.asset.display;
+  } else {
+    $("brandSub").textContent = "API Unreachable";
+    toast("Could not reach API server at http://localhost:8000.", "bad");
+  }
+  renderAuth();
+  render();
+});
+</script>
+</body>
+</html>

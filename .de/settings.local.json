@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:developers.zerion.io)",
+      "Bash(../.venv2/Scripts/python.exe -c ' *)",
+      "Bash(../.venv2/Scripts/python.exe -m pytest tests -x -q)",
+      "Bash(../.venv2/Scripts/python.exe -m pytest tests -q)",
+      "Bash(../.venv2/Scripts/python.exe -m pytest tests/test_zerion.py -q)",
+      "Bash(../.venv2/Scripts/python.exe -m pytest tests/test_zerion.py -q -k \"configuration_exposes or retries_a_throttle or fans_out or flat_cli_shape\")",
+      "Bash(../.venv2/Scripts/python.exe -m pytest tests/test_zerion.py -q -k \"retries_a_throttle or fans_out or flat_cli_shape\")",
+      "Bash(../.venv2/Scripts/python.exe -m pyflakes app/integrations app/payments app/routers/zerion.py app/agent tests/test_zerion.py)",
+      "Bash(../.venv2/Scripts/python.exe -m py_compile app/integrations/zerion/*.py app/payments/*.py app/routers/zerion.py)",
+      "Bash(grep -rn \"zk_[A-Za-z0-9]\\\\{6,\\\\}\\\\|0x[a-fA-F0-9]\\\\{64\\\\}\" .env.example ZERION.md backend/app/integrations backend/app/payments backend/app/config.py)"
+    ]
+  }
+}
