@@ -1,0 +1,48 @@
+# AlgoKit project configuration for the M2X Compute & Tool Exchange.
+#
+# The exchange runs against Algorand TestNet and settles every x402 payment in
+# ASA #10458941. Both values are surfaced to the backend through the
+# ALGORAND_NETWORK / ALGORAND_ASSET_ID environment variables, which the app
+# re-validates on every payment — this file configures the tooling, it is not
+# the authority on the asset.
+
+[algokit]
+min_version = "v2.0.0"
+
+[project]
+type = "backend"
+name = "m2x-compute-exchange"
+
+[project.run]
+# `algokit project run <name>`
+serve = { commands = [
+  "uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload",
+], description = "Run the exchange API and operator console", cwd = "backend" }
+test = { commands = [
+  "pytest -q",
+], description = "Run the backend test suite", cwd = "backend" }
+asset-check = { commands = [
+  "python -c \"from app.algorand import configuration_report; import json; print(json.dumps(configuration_report(), indent=2))\"",
+], description = "Print the configured payment asset and its validation report", cwd = "backend" }
+
+[generate.env]
+# Defaults written into generated .env files.
+ALGORAND_NETWORK = "testnet"
+ALGORAND_ASSET_ID = "10458941"
+
+[deploy]
+environment_secrets = [
+  "M2X_JWT_SECRET",
+  "M2X_RECEIPT_SIGNING_KEY",
+  "M2X_ALGORAND_DISPENSER_MNEMONIC",
+]
+
+[deploy.testnet]
+environment_secrets = [
+  "M2X_JWT_SECRET",
+  "M2X_RECEIPT_SIGNING_KEY",
+  "M2X_ALGORAND_DISPENSER_MNEMONIC",
+]
+
+[deploy.localnet]
+environment_secrets = []
